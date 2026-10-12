@@ -14,6 +14,8 @@ pub struct FakeEngine {
     pub sent: Mutex<Vec<EngineCommand>>,
     pub video: Arc<VideoOutput>,
     pub devices: Vec<AudioDevice>,
+    /// Events handed to the app on its next tick.
+    pub events: Mutex<Vec<EngineEvent>>,
 }
 
 impl Default for FakeEngine {
@@ -32,6 +34,7 @@ impl FakeEngine {
                 AudioDevice { id: "speakers".into(), name: "Speakers".into() },
                 AudioDevice { id: "headphones".into(), name: "Headphones".into() },
             ],
+            events: Mutex::new(Vec::new()),
         }
     }
 
@@ -77,7 +80,7 @@ impl MediaEngine for FakeEngine {
         self.status.lock().clone()
     }
     fn poll_events(&self) -> Vec<EngineEvent> {
-        Vec::new()
+        std::mem::take(&mut *self.events.lock())
     }
     fn video(&self) -> Arc<VideoOutput> {
         self.video.clone()

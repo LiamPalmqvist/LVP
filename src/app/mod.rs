@@ -1291,3 +1291,6 @@ fn chrono_like_stamp() -> String {
     let (d, s) = (secs / 86_400, secs % 86_400);
     format!("{d}-{:02}h{:02}m{:02}s", s / 3600, (s / 60) % 60, s % 60)
 }
+
+#[cfg(test)]
+mod tests;
