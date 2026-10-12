@@ -46,6 +46,8 @@ fn plays_and_probes_a_clip() {
     };
     let mut settings = Settings::default();
     settings.recording.discover_cast = false;
+    // Decode audio but send it nowhere, so the test tone is never heard.
+    settings.general.extra_args = "--aout=dummy".into();
     let engine = match VlcEngine::new(&settings) {
         Ok(e) => e,
         Err(e) => {
