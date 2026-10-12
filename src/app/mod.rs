@@ -104,6 +104,11 @@ pub struct App {
     /// Index of the item whose position we last saved, to save on change.
     playing_source: Option<MediaSource>,
     pub system: system::SystemState,
+    inbox: Option<crossbeam_channel::Receiver<Vec<PathBuf>>>,
+    /// Set when the window should come to the front; the UI clears it.
+    pub raise_window: bool,
+    /// Set when newly opened media should take the window; the UI clears it.
+    pub show_player: bool,
 }
 
 impl App {
@@ -147,6 +152,9 @@ impl App {
             quit_requested: false,
             playing_source: None,
             system: Default::default(),
+            inbox: None,
+            raise_window: false,
+            show_player: false,
             settings,
         };
         app.engine.send(EngineCommand::SetVolume(app.settings.audio.volume));
@@ -200,6 +208,7 @@ impl App {
             self.save_settings_now();
         }
         self.tick_system();
+        self.tick_inbox();
         self.toasts.retain(|t| t.until > now);
         if self.osd.as_ref().is_some_and(|o| o.until <= now) {
             self.osd = None;
@@ -1340,6 +1349,35 @@ pub mod system {
                 if show && let Some(item) = self.queue.current_item() {
                     let body = item.meta.artist.clone().unwrap_or_default();
                     hooks.notify(&item.title(), &body);
+                }
+            }
+        }
+    }
+}
+
+/// Files arriving from outside the window (another launch of the app).
+pub mod inbox {
+    use std::path::PathBuf;
+
+    use crossbeam_channel::Receiver;
+
+    use super::App;
+
+    impl App {
+        pub fn set_inbox(&mut self, rx: Receiver<Vec<PathBuf>>) {
+            self.inbox = Some(rx);
+        }
+
+        /// Opens anything another launch sent. Returns true when the window
+        /// should come forward (and show the player if files were opened).
+        pub(super) fn tick_inbox(&mut self) {
+            let Some(rx) = &self.inbox else { return };
+            let batches: Vec<Vec<PathBuf>> = rx.try_iter().collect();
+            for paths in batches {
+                self.raise_window = true;
+                if !paths.is_empty() {
+                    self.open_paths(paths);
+                    self.show_player = true;
                 }
             }
         }

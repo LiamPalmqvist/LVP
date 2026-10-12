@@ -2,5 +2,7 @@
 //! traits in `app::ports`; only `main.rs` wires these in.
 
 pub mod platform;
+#[cfg(unix)]
+pub mod single_instance;
 pub mod store;
 pub mod vlc;

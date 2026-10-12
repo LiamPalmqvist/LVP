@@ -37,6 +37,17 @@ fn main() -> eframe::Result {
     let files: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).filter(|p| p.exists()).collect();
 
     let store = Arc::new(JsonStore::new());
+    #[cfg(unix)]
+    let inbox = {
+        let one = store
+            .load("settings")
+            .and_then(|s| serde_json::from_str::<Settings>(&s).ok())
+            .is_some_and(|s| s.library.one_instance || (s.library.one_instance_from_file_manager && !files.is_empty()));
+        if one && notvlc::infra::single_instance::forward(&store.data_dir(), &files) {
+            return Ok(());
+        }
+        notvlc::infra::single_instance::listen(&store.data_dir())
+    };
     let settings: Settings = store.load("settings").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let engine = match VlcEngine::new(&settings) {
         Ok(e) => Arc::new(e),
@@ -54,6 +65,10 @@ fn main() -> eframe::Result {
     let probe = Arc::new(VlcProbe::new(engine.helper()));
     let mut app = App::new(engine, probe, store);
     app.set_system_hooks(Arc::new(notvlc::infra::platform::MacHooks::new()));
+    #[cfg(unix)]
+    if let Some(rx) = inbox {
+        app.set_inbox(rx);
+    }
 
     let size = app.settings.interface.window_size.unwrap_or([1280.0, 800.0]);
     let mut viewport = egui::ViewportBuilder::default()
