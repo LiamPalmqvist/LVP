@@ -119,3 +119,6 @@ design/images/
 
 # Python bytecode from tools/fig
 __pycache__/
+
+# Agent worktrees
+.claude/worktrees/

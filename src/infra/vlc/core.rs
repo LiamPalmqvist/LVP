@@ -46,6 +46,8 @@ pub fn last_error(api: &Api) -> String {
 pub struct Instance {
     pub api: Arc<Api>,
     pub ptr: *mut ffi::Instance,
+    /// Where libvlc's own log goes (a file or the null device).
+    log: Option<*mut libc::FILE>,
 }
 
 unsafe impl Send for Instance {}
@@ -68,13 +70,48 @@ impl Instance {
             (api.libvlc_set_user_agent)(ptr, name.as_ptr(), http.as_ptr());
             (api.libvlc_set_app_id)(ptr, id.as_ptr(), ver.as_ptr(), icon.as_ptr());
         }
-        Ok(Self { api, ptr })
+        let mut inst = Self { api, ptr, log: None };
+        inst.log_to(None);
+        Ok(inst)
+    }
+
+    /// Sends libvlc's log to `path` (appending), or discards it when `None`
+    /// so it never spills onto the terminal.
+    pub fn log_to(&mut self, path: Option<&std::path::Path>) {
+        let target = match path {
+            Some(p) => {
+                if let Some(dir) = p.parent() {
+                    let _ = std::fs::create_dir_all(dir);
+                }
+                p.to_string_lossy().into_owned()
+            }
+            None if cfg!(windows) => "NUL".to_string(),
+            None => "/dev/null".to_string(),
+        };
+        let cpath = cstring(&target);
+        let mode = cstring("a");
+        let file = unsafe { libc::fopen(cpath.as_ptr(), mode.as_ptr()) };
+        if file.is_null() {
+            return;
+        }
+        unsafe {
+            (self.api.libvlc_log_set_file)(self.ptr, file);
+            if let Some(old) = self.log.replace(file) {
+                libc::fclose(old);
+            }
+        }
     }
 }
 
 impl Drop for Instance {
     fn drop(&mut self) {
-        unsafe { (self.api.libvlc_release)(self.ptr) };
+        unsafe {
+            (self.api.libvlc_log_unset)(self.ptr);
+            (self.api.libvlc_release)(self.ptr);
+            if let Some(f) = self.log.take() {
+                libc::fclose(f);
+            }
+        }
     }
 }
 

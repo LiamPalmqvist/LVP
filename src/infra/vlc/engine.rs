@@ -66,11 +66,13 @@ impl Session {
     fn new(
         api: Arc<Api>,
         args: Vec<String>,
+        log: Option<std::path::PathBuf>,
         video: &Arc<VideoOutput>,
         raw_tx: Sender<Raw>,
         dialogs: &Arc<DialogBridge>,
     ) -> Result<Self> {
-        let inst = Instance::new(api.clone(), &args)?;
+        let mut inst = Instance::new(api.clone(), &args)?;
+        inst.log_to(log.as_deref());
         dialogs.attach(inst.ptr);
         let mp = unsafe { (api.libvlc_media_player_new)(inst.ptr) };
         if mp.is_null() {
@@ -208,7 +210,8 @@ impl VlcEngine {
         let (cmd_tx, cmd_rx) = unbounded();
         let video = Arc::new(VideoOutput::new());
         let dialogs = DialogBridge::new(api.clone(), ev_tx.clone());
-        let session = Session::new(api.clone(), args::playback(settings), &video, raw_tx.clone(), &dialogs)?;
+        let session =
+            Session::new(api.clone(), args::playback(settings), log_path(settings), &video, raw_tx.clone(), &dialogs)?;
         let helper = Arc::new(Helper::new(api.clone(), &args::helper(settings), ev_tx.clone())?);
         dialogs.attach(helper.inst.ptr);
         if settings.recording.discover_cast {
@@ -1024,7 +1027,9 @@ impl Worker {
 
     fn reconfigure(&mut self, settings: Settings) {
         let new_args = args::playback(&settings);
-        let changed = new_args != self.s().args;
+        let changed = new_args != self.s().args
+            || (settings.general.save_log, &settings.general.log_file)
+                != (self.settings.general.save_log, &self.settings.general.log_file);
         let post_changed = settings.performance.post_processing != self.settings.performance.post_processing;
         self.settings = settings;
         if post_changed {
@@ -1042,7 +1047,14 @@ impl Worker {
             (r, st.state.is_active())
         });
         self.detach_media_events();
-        match Session::new(self.api.clone(), new_args, &self.video, self.raw_tx.clone(), &self.dialogs) {
+        match Session::new(
+            self.api.clone(),
+            new_args,
+            log_path(&self.settings),
+            &self.video,
+            self.raw_tx.clone(),
+            &self.dialogs,
+        ) {
             Ok(new) => {
                 let old = std::mem::replace(&mut *self.session.write(), Arc::new(new));
                 self.dialogs.detach(old.inst.ptr);
@@ -1070,6 +1082,23 @@ impl Worker {
             self.open(req);
         }
     }
+}
+
+/// The libvlc log file chosen in General > Diagnostics, if logging is on.
+fn log_path(settings: &Settings) -> Option<std::path::PathBuf> {
+    let g = &settings.general;
+    if !g.save_log {
+        return None;
+    }
+    if !g.log_file.trim().is_empty() {
+        return Some(std::path::PathBuf::from(expand_home(g.log_file.trim())));
+    }
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from).unwrap_or_else(std::env::temp_dir);
+    Some(if cfg!(target_os = "macos") {
+        home.join("Library/Logs/NotVLC/vlc.log")
+    } else {
+        home.join(".cache/notvlc/vlc.log")
+    })
 }
 
 fn expand_home(p: &str) -> String {
