@@ -52,7 +52,8 @@ fn main() -> eframe::Result {
         }
     };
     let probe = Arc::new(VlcProbe::new(engine.helper()));
-    let app = App::new(engine, probe, store);
+    let mut app = App::new(engine, probe, store);
+    app.set_system_hooks(Arc::new(notvlc::infra::platform::MacHooks::new()));
 
     let size = app.settings.interface.window_size.unwrap_or([1280.0, 800.0]);
     let mut viewport = egui::ViewportBuilder::default()

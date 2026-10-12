@@ -286,3 +286,20 @@ pub trait Store: Send + Sync {
     fn data_dir(&self) -> PathBuf;
     fn cache_dir(&self) -> PathBuf;
 }
+
+/// Operating-system integration that is not media: sleep prevention and
+/// desktop notifications.
+pub trait SystemHooks: Send + Sync {
+    /// Keeps the display awake while `on` (video playing).
+    fn inhibit_sleep(&self, on: bool);
+    /// Shows a desktop notification.
+    fn notify(&self, title: &str, body: &str);
+}
+
+/// Does nothing; the default until a real implementation is installed.
+pub struct NoSystemHooks;
+
+impl SystemHooks for NoSystemHooks {
+    fn inhibit_sleep(&self, _on: bool) {}
+    fn notify(&self, _title: &str, _body: &str) {}
+}

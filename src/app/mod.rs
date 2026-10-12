@@ -103,6 +103,7 @@ pub struct App {
     pub quit_requested: bool,
     /// Index of the item whose position we last saved, to save on change.
     playing_source: Option<MediaSource>,
+    pub system: system::SystemState,
 }
 
 impl App {
@@ -145,6 +146,7 @@ impl App {
             last_save: Instant::now(),
             quit_requested: false,
             playing_source: None,
+            system: Default::default(),
             settings,
         };
         app.engine.send(EngineCommand::SetVolume(app.settings.audio.volume));
@@ -197,6 +199,7 @@ impl App {
         {
             self.save_settings_now();
         }
+        self.tick_system();
         self.toasts.retain(|t| t.until > now);
         if self.osd.as_ref().is_some_and(|o| o.until <= now) {
             self.osd = None;
@@ -1294,3 +1297,51 @@ fn chrono_like_stamp() -> String {
 
 #[cfg(test)]
 mod tests;
+
+/// Sleep prevention and track notifications, driven from `tick`.
+pub mod system {
+    use std::sync::Arc;
+
+    use super::App;
+    use super::ports::{PlayerState, SystemHooks};
+    use crate::domain::settings::TrackPopup;
+
+    #[derive(Default)]
+    pub struct SystemState {
+        pub hooks: Option<Arc<dyn SystemHooks>>,
+        inhibiting: bool,
+        announced: Option<String>,
+        /// Set by the UI from the window state.
+        pub window_minimized: bool,
+    }
+
+    impl App {
+        pub fn set_system_hooks(&mut self, hooks: Arc<dyn SystemHooks>) {
+            self.system.hooks = Some(hooks);
+        }
+
+        pub(super) fn tick_system(&mut self) {
+            let Some(hooks) = self.system.hooks.clone() else { return };
+            let want = self.settings.video.stop_screensaver
+                && self.status.state == PlayerState::Playing
+                && self.status.has_video;
+            if want != self.system.inhibiting {
+                hooks.inhibit_sleep(want);
+                self.system.inhibiting = want;
+            }
+            let current = self.queue.current_item().map(|i| i.source.mrl());
+            if self.status.state == PlayerState::Playing && current != self.system.announced {
+                self.system.announced = current;
+                let show = match self.settings.interface.track_popup {
+                    TrackPopup::Never => false,
+                    TrackPopup::WhenMinimized => self.system.window_minimized,
+                    TrackPopup::Always => true,
+                };
+                if show && let Some(item) = self.queue.current_item() {
+                    let body = item.meta.artist.clone().unwrap_or_default();
+                    hooks.notify(&item.title(), &body);
+                }
+            }
+        }
+    }
+}
