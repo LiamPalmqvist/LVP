@@ -109,6 +109,7 @@ pub struct App {
     pub raise_window: bool,
     /// Set when newly opened media should take the window; the UI clears it.
     pub show_player: bool,
+    media_controls: Option<Box<dyn MediaControls>>,
 }
 
 impl App {
@@ -155,6 +156,7 @@ impl App {
             inbox: None,
             raise_window: false,
             show_player: false,
+            media_controls: None,
             settings,
         };
         app.engine.send(EngineCommand::SetVolume(app.settings.audio.volume));
@@ -209,6 +211,7 @@ impl App {
         }
         self.tick_system();
         self.tick_inbox();
+        self.tick_media_controls();
         self.toasts.retain(|t| t.until > now);
         if self.osd.as_ref().is_some_and(|o| o.until <= now) {
             self.osd = None;
@@ -1380,6 +1383,48 @@ pub mod inbox {
                     self.show_player = true;
                 }
             }
+        }
+    }
+}
+
+/// Media keys and the system Now Playing widget.
+pub mod remote {
+    use super::App;
+    use super::ports::{MediaControls, NowPlaying, PlayerState, RemoteCommand};
+
+    impl App {
+        pub fn set_media_controls(&mut self, c: Box<dyn MediaControls>) {
+            self.media_controls = Some(c);
+        }
+
+        pub(super) fn tick_media_controls(&mut self) {
+            let Some(mut controls) = self.media_controls.take() else { return };
+            for cmd in controls.poll() {
+                match cmd {
+                    RemoteCommand::Play => self.play(),
+                    RemoteCommand::Pause => self.pause(),
+                    RemoteCommand::Toggle => self.toggle_pause(),
+                    RemoteCommand::Next => self.next(),
+                    RemoteCommand::Previous => self.previous(),
+                    RemoteCommand::Stop => self.stop(),
+                    RemoteCommand::SeekBy(d) => self.jump(d),
+                    RemoteCommand::SeekTo(t) => self.seek_ms(t),
+                }
+            }
+            let now = match (self.queue.current_item(), self.status.state) {
+                (Some(item), s) if s.is_active() => Some(NowPlaying {
+                    title: self.status.meta.title.clone().unwrap_or_else(|| item.title()),
+                    artist: self.status.meta.artist.clone().or_else(|| item.meta.artist.clone()),
+                    album: self.status.meta.album.clone().or_else(|| item.meta.album.clone()),
+                    artwork: self.status.meta.artwork_url.clone().or_else(|| item.meta.artwork_url.clone()),
+                    duration_ms: self.status.length_ms,
+                    position_ms: self.status.time_ms,
+                    playing: s == PlayerState::Playing,
+                }),
+                _ => None,
+            };
+            controls.update(now.as_ref());
+            self.media_controls = Some(controls);
         }
     }
 }

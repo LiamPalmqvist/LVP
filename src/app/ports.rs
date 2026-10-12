@@ -303,3 +303,35 @@ impl SystemHooks for NoSystemHooks {
     fn inhibit_sleep(&self, _on: bool) {}
     fn notify(&self, _title: &str, _body: &str) {}
 }
+
+/// What the system's "Now Playing" widget shows.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct NowPlaying {
+    pub title: String,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+    /// A `file://` URL for cover art.
+    pub artwork: Option<String>,
+    pub duration_ms: i64,
+    pub position_ms: i64,
+    pub playing: bool,
+}
+
+/// Commands from media keys, headphones or the Now Playing widget.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RemoteCommand {
+    Play,
+    Pause,
+    Toggle,
+    Next,
+    Previous,
+    Stop,
+    SeekBy(i64),
+    SeekTo(i64),
+}
+
+/// The platform's media controls. Lives on the UI thread.
+pub trait MediaControls {
+    fn update(&mut self, now: Option<&NowPlaying>);
+    fn poll(&mut self) -> Vec<RemoteCommand>;
+}

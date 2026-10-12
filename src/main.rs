@@ -87,5 +87,8 @@ fn main() -> eframe::Result {
         persist_window: false,
         ..Default::default()
     };
+    if let Some(c) = notvlc::infra::media_controls::SystemMediaControls::new() {
+        app.set_media_controls(Box::new(c));
+    }
     eframe::run_native("NotVLC", options, Box::new(move |cc| Ok(Box::new(NotVlcApp::new(&cc.egui_ctx, app, files)))))
 }
