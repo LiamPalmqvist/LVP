@@ -304,7 +304,7 @@ pub enum Btn {
 /// The design's 32pt action button (SemiBold 14), at least `min_w` wide.
 pub fn action_button(ui: &mut Ui, text: &str, kind: Btn, min_w: f32) -> Response {
     let p = pal(ui.ctx());
-    let galley = ui.painter().layout_no_wrap(text.to_string(), font::semibold(14.0), Color32::WHITE);
+    let galley = ui.painter().layout_no_wrap(text.to_string(), font::semibold(14.0), Color32::PLACEHOLDER);
     let w = (galley.size().x + 40.0).max(min_w);
     let (rect, resp) = ui.allocate_exact_size(vec2(w, 32.0), Sense::click());
     let hovered = resp.hovered();

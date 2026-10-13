@@ -11,14 +11,14 @@ pub fn general(f: &mut Form, s: &mut Settings, cx: &mut Cx) {
     let g = &mut s.general;
     f.section("Appearance");
     f.pick("Interface language", None, &mut g.language, LANGUAGES);
-    f.row("Theme", Some("Dark or light colours, or follow the system appearance."), super::kit::ROW_FIELD, |ui| {
+    f.row("Theme", None, super::kit::ROW_FIELD, |ui| {
         let mut i = Theme::ALL.iter().position(|t| *t == g.theme).unwrap_or(0);
         let labels: Vec<&str> = Theme::ALL.iter().map(|t| t.label()).collect();
         if widgets::segmented(ui, &mut i, &labels, super::kit::CONTROL_W) {
             g.theme = Theme::ALL[i];
         }
     });
-    f.row("Accent color", Some("The highlight colour used for sliders, toggles and selections."), 46.0, |ui| {
+    f.row("Accent color", None, super::kit::ROW_FIELD, |ui| {
         let mut i = Accent::ALL.iter().position(|a| *a == g.accent).unwrap_or(0);
         let colors: Vec<Color32> = Accent::ALL
             .iter()

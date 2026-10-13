@@ -142,6 +142,19 @@ impl Category {
         }
     }
 
+    /// Paints the sidebar icon. Interface, Privacy and Recording only have a
+    /// usable outline in their "active" artwork, so their idle state draws
+    /// that artwork in a single colour.
+    pub fn paint_icon(self, ui: &Ui, rect: Rect, selected: bool, color: Color32) {
+        let mono = matches!(self, Category::Interface | Category::Privacy | Category::Recording);
+        if mono && !selected {
+            let colors = crate::ui::icons::IconColors { fg: color, accent: color, accent_dim: color };
+            crate::ui::icons::paint(ui, rect, self.icon(true), colors);
+        } else {
+            paint_icon(ui, rect, self.icon(selected), color);
+        }
+    }
+
     fn index(self) -> usize {
         Category::ALL.iter().position(|c| *c == self).unwrap_or(0)
     }
@@ -416,7 +429,7 @@ fn sidebar(ui: &mut Ui, ss: &mut SettingsState, searching: bool) {
                 ui.painter().rect_filled(r, CornerRadius::same(2), p.hover);
             }
             let icon_rect = Rect::from_center_size(pos2(r.min.x + 20.0, r.center().y), Vec2::splat(24.0));
-            paint_icon(ui, icon_rect, c.icon(selected), if selected { p.accent } else { p.fg_a2 });
+            c.paint_icon(ui, icon_rect, selected, if selected { p.accent } else { p.fg_a2 });
             let col = if selected || resp.hovered() { p.fg1 } else { p.fg2 };
             ui.painter().text(
                 pos2(r.min.x + 44.0, r.center().y),
@@ -457,7 +470,7 @@ fn search_results(ui: &mut Ui, s: &mut Settings, cx: &mut Cx) {
         let w = ui.available_width();
         let (r, resp) = ui.allocate_exact_size(vec2(w, 39.0), Sense::click());
         let col = if resp.hovered() { p.accent } else { p.fg2 };
-        paint_icon(ui, Rect::from_min_size(pos2(r.min.x, r.min.y + 8.0), Vec2::splat(22.0)), c.icon(false), col);
+        c.paint_icon(ui, Rect::from_min_size(pos2(r.min.x, r.min.y + 8.0), Vec2::splat(22.0)), false, col);
         ui.painter().text(pos2(r.min.x + 30.0, r.min.y + 10.0), Align2::LEFT_TOP, c.name(), font::medium(16.0), col);
         if resp.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text("Open this page").clicked() {
             cx.ss.category = c;
