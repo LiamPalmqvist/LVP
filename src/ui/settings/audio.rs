@@ -320,7 +320,7 @@ fn equalizer(ui: &mut Ui, eq: &mut EqualizerSettings, open: &mut bool) {
     let x = bar.center().x - total / 2.0;
     let gw = galley.size().x;
     ui.painter().galley(pos2(x, bar.center().y - galley.size().y / 2.0), galley, col);
-    let chev = if *open { Icon::ChevronUp } else { Icon::ChevronDown };
+    let chev = Icon::ChevronDown;
     paint_icon(ui, Rect::from_min_size(pos2(x + gw + 10.0, bar.center().y - 12.0), Vec2::splat(24.0)), chev, col);
     if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
         *open = !*open;

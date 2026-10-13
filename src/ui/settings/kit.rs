@@ -23,6 +23,7 @@ pub const CONTROL_W: f32 = 320.0;
 pub const ROW_TOGGLE: f32 = 42.0;
 pub const ROW_FIELD: f32 = 46.0;
 pub const ROW_SLIDER: f32 = 57.0;
+pub const ROW_NUMBER: f32 = 48.0;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Mode {
@@ -185,7 +186,7 @@ impl<'u> Form<'u> {
         decimals: usize,
         unit: &str,
     ) -> bool {
-        self.row(label, info, ROW_FIELD, |ui| number_field(ui, v, range, decimals, unit, CONTROL_W)).unwrap_or(false)
+        self.row(label, info, ROW_NUMBER, |ui| number_field(ui, v, range, decimals, unit, CONTROL_W)).unwrap_or(false)
     }
 
     /// Integer convenience over [`Form::number`].

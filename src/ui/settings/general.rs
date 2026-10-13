@@ -306,7 +306,7 @@ pub fn controls(f: &mut Form, s: &mut Settings, cx: &mut Cx) {
     if f.action_wide("Defaults", None, "Edit Keyboard Shortcuts", Btn::Normal) {
         cx.later(|_, st| st.dialogs.shortcuts = true);
     }
-    if f.action_wide("Reset all shortcuts", None, "Reset", Btn::Danger) {
+    if f.action_wide("Reset all shortcuts", None, "Reset", Btn::Normal) {
         cx.ss.confirm = Some(Confirm::ResetShortcuts);
     }
 

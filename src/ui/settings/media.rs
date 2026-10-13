@@ -190,7 +190,7 @@ pub fn video(f: &mut Form, s: &mut Settings, _cx: &mut Cx) {
     let e = &mut v.effects.essential;
     let mut changed = false;
     let r = VideoEssential::RANGE_HUE;
-    changed |= f.slider("Hue", None, &mut e.hue, r.0..=r.1, &SliderSpec::new().origin(0.0));
+    changed |= f.slider("Hue", None, &mut e.hue, r.0..=r.1, &SliderSpec::new());
     let r = VideoEssential::RANGE_BRIGHTNESS;
     changed |= f.slider("Brightness", None, &mut e.brightness, r.0..=r.1, &SliderSpec::new().ticks(2));
     let r = VideoEssential::RANGE_CONTRAST;
