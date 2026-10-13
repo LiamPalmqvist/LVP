@@ -32,6 +32,13 @@ pub struct PanelsState {
     pub show_stats: bool,
     /// The video area, recorded each frame for overlays.
     pub video_rect: Option<Rect>,
+    /// Opens every effect card (snapshots).
+    pub expand_cards: bool,
+    /// Lets popovers use all the height above the bar instead of the
+    /// design's (snapshots of long panels).
+    pub fill_height: bool,
+    /// Quick settings > Video > HDR: index into `video_fx::HDR_OPTIONS`.
+    pub hdr: usize,
     /// The sleep timer length last chosen (cleared when the timer ends).
     pub sleep_minutes: Option<u32>,
     /// Subtitle style edits waiting for the pointer to be released.
@@ -60,7 +67,11 @@ pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
     let p = pal(ui.ctx());
     let top = ui.max_rect().min.y + 12.0;
     let bottom = bar.min.y - 20.0;
-    let h = design_height(panel).min(bottom - top).max(160.0);
+    let design = if st.panels.fill_height { f32::INFINITY } else { design_height(panel) };
+    let h = design.min(bottom - top).max(160.0);
+    if st.panels.expand_cards {
+        ui.ctx().data_mut(|d| d.insert_temp(egui::Id::new(kit::EXPAND_ALL), true));
+    }
     let rect = Rect::from_min_size(pos2(bar.max.x - 20.0 - kit::WIDTH, bottom - h), vec2(kit::WIDTH, h));
     egui::Area::new(ui.id().with("popover")).order(egui::Order::Middle).fixed_pos(rect.min).show(ui.ctx(), |ui| {
         kit::popover_frame(&p).show(ui, |ui| {

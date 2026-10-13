@@ -13,6 +13,8 @@ use crate::ui::widgets::{self, pal};
 pub const WIDTH: f32 = 400.0;
 pub const MARGIN: f32 = 20.0;
 pub const TAB_H: f32 = 50.0;
+/// Temp-data flag that opens every effect card by default.
+pub const EXPAND_ALL: &str = "panels-expand-cards";
 
 /// The popover surface: BG/B1 at 95%, radius 10.
 pub fn popover_frame(p: &Palette) -> egui::Frame {
@@ -198,18 +200,17 @@ pub fn value_box(ui: &mut Ui, id: impl std::hash::Hash, display: &str, width: f3
 
 pub fn value_box_sized(ui: &mut Ui, id: impl std::hash::Hash, display: &str, size: Vec2) -> Option<BoxEvent> {
     let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
-    value_box_in(ui, rect, resp.hovered(), id, display, 0.0)
+    value_box_in(ui, rect, rect.shrink2(vec2(12.0, 0.0)), resp.hovered(), id, display)
 }
 
-/// A value box in an already allocated `rect`; `reserve` keeps room on the
-/// right (for a swatch).
-fn value_box_in(
+/// A value box in an already allocated `rect`, editing text inside `text`.
+pub fn value_box_in(
     ui: &mut Ui,
     rect: Rect,
+    text: Rect,
     hovered: bool,
     id: impl std::hash::Hash,
     display: &str,
-    reserve: f32,
 ) -> Option<BoxEvent> {
     let p = pal(ui.ctx());
     let te_id = ui.make_persistent_id(id).with("te");
@@ -220,8 +221,7 @@ fn value_box_in(
     } else {
         display.to_string()
     };
-    let inner = rect.shrink2(vec2(12.0, 0.0));
-    let inner = Rect::from_min_max(inner.min, pos2(inner.max.x - reserve, inner.max.y));
+    let inner = text;
     let te = egui::TextEdit::singleline(&mut buf)
         .id(te_id)
         .frame(false)
@@ -230,7 +230,9 @@ fn value_box_in(
         .vertical_align(egui::Align::Center)
         .margin(egui::Margin::ZERO)
         .desired_width(inner.width());
-    let r = ui.put(inner, te);
+    let mut child =
+        ui.new_child(UiBuilder::new().max_rect(inner).layout(egui::Layout::left_to_right(egui::Align::Center)));
+    let r = child.add(te);
     let mut out = None;
     if r.has_focus() {
         ui.data_mut(|d| d.insert_temp(te_id, buf.clone()));
@@ -647,7 +649,8 @@ pub fn slider_i32(ui: &mut Ui, value: &mut i32, range: std::ops::RangeInclusive<
 pub fn card(ui: &mut Ui, id: impl std::hash::Hash, add: impl FnOnce(&mut Ui)) {
     let p = pal(ui.ctx());
     let id = ui.make_persistent_id(id);
-    let mut open = ui.data_mut(|d| *d.get_persisted_mut_or(id, false));
+    let all = ui.data(|d| d.get_temp::<bool>(egui::Id::new(EXPAND_ALL))).unwrap_or(false);
+    let mut open = ui.data_mut(|d| *d.get_persisted_mut_or(id, all));
     let fill = if open { p.bg_a3 } else { p.bg_b2 };
     egui::Frame::new().fill(fill).corner_radius(6).show(ui, |ui| {
         let w = ui.available_width();
@@ -805,8 +808,14 @@ pub fn color_box(ui: &mut Ui, id: impl std::hash::Hash + Copy, rgb: &mut u32, si
     let mut changed = false;
     let shown = format!("#{:06X}", *rgb & 0xFFFFFF);
     let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
-    if let Some(BoxEvent::Commit(t)) = value_box_in(ui, rect, resp.hovered(), id, &shown, 30.0)
-        && let Ok(v) = u32::from_str_radix(t.trim().trim_start_matches('#'), 16)
+    if let Some(BoxEvent::Commit(t)) = value_box_in(
+        ui,
+        rect,
+        Rect::from_min_max(rect.min + vec2(12.0, 0.0), rect.max - vec2(42.0, 0.0)),
+        resp.hovered(),
+        id,
+        &shown,
+    ) && let Ok(v) = u32::from_str_radix(t.trim().trim_start_matches('#'), 16)
     {
         *rgb = v & 0xFFFFFF;
         changed = true;
