@@ -1,32 +1,33 @@
-//! The music view (cover art and visualiser), the waveform seek bar data,
-//! and the floating mini player.
+//! The music view (cover art and visualiser), the waveform seek bar, and the
+//! floating mini player.
 
-use egui::{Rect, TextureId, Ui};
+mod art;
+mod mini;
+mod player;
+mod visualiser;
+mod waveform;
 
-use crate::app::App;
-use crate::ui::state::UiState;
-use crate::ui::widgets::pal;
+use crate::domain::media::MediaSource;
+
+pub use mini::miniplayer;
+pub use player::show_player;
+pub use waveform::draw_waveform_seek;
 
 #[derive(Default)]
-pub struct MusicState {}
-
-/// Shown in the player when the current item has no picture.
-pub fn show_player(ui: &mut Ui, rect: Rect, app: &mut App, _st: &mut UiState) {
-    let p = pal(ui.ctx());
-    let art = app.queue.current_item().cloned().and_then(|i| app.thumbnail(&i));
-    let side = rect.height().min(rect.width()) * 0.5;
-    let r = Rect::from_center_size(rect.center(), egui::vec2(side, side));
-    if !art.is_some_and(|a| crate::ui::images::paint_cover(ui, r, &a, 12)) {
-        ui.painter().rect_filled(r, 12, p.bg_a3);
-    }
-}
-
-/// The floating player in the library's bottom-right corner.
-pub fn miniplayer(
-    _ui: &mut Ui,
-    _content: Rect,
-    _app: &mut App,
-    _st: &mut UiState,
-    _frame: Option<(TextureId, [u32; 2])>,
-) {
+pub struct MusicState {
+    /// The mini player's queue list is open above the preview.
+    pub mini_queue: bool,
+    /// Scroll the mini player's queue to the current item on its next frame.
+    pub mini_reveal: bool,
+    /// Row selected in the mini player's queue, for its remove button.
+    pub mini_selected: Option<usize>,
+    /// Queue row being dragged by its handle.
+    pub mini_drag: Option<usize>,
+    /// The next press of the queue's sort button sorts Z to A.
+    pub mini_sort_desc: bool,
+    /// The mini player was closed while this source was current; it comes
+    /// back when playback starts again.
+    pub mini_closed: Option<MediaSource>,
+    /// Bar levels of the music view's visualiser.
+    pub visualiser: visualiser::Visualiser,
 }

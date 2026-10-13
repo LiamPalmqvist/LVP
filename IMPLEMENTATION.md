@@ -133,6 +133,8 @@ Customisable toolbar, player and file context menus, mini player, music view.
   - [x] Control bar draws every toolbar item
   - [ ] Customize Player dialog (`2160:6137`) edits the layout by drag and drop
   - [ ] Right-click menu (`6065:13616`), mini player and music view match their frames
+  - [x] Mini player matches `970:3091` in every variant (default, hover, queue open, hover with
+    queue, ended) and sits in the library's corner as in `970:2703`
 - **Touches:** `ui/shell/controls.rs`, `ui/panels/`, `ui/music/`
 - **Depends on:** M1
 

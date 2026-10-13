@@ -221,6 +221,49 @@ fn main() {
         }
     }
 
+    // ---- music: mini player, music view, waveform ------------------------
+    //   --mini-queue          open the mini player's queue list
+    //   --ended               playback has ended (mini player "replay" variant)
+    //   --paused              playback is paused
+    //   --pip                 picture-in-picture layout (use with --size 480x300)
+    //   --hide-ui             the player's "hide UI" mode
+    //   --waveform            give the current track demo waveform peaks
+    //   --hover X,Y           leave the pointer at X,Y (hover states)
+    {
+        let ui = harness.state_mut();
+        if has(&args, "--mini-queue") {
+            ui.st.music.mini_queue = true;
+            ui.st.music.mini_reveal = true;
+        }
+        if has(&args, "--ended") {
+            fake.status.lock().state = PlayerState::Ended;
+        }
+        if has(&args, "--paused") {
+            fake.status.lock().state = PlayerState::Paused;
+        }
+        ui.st.pip |= has(&args, "--pip");
+        ui.st.hide_ui |= has(&args, "--hide-ui");
+        if has(&args, "--waveform")
+            && let Some(src) = ui.app.queue.current_item().map(|i| i.source.clone())
+        {
+            let peaks = (0..400)
+                .map(|i| {
+                    let x = i as f32;
+                    let body = 0.55 + 0.25 * (x * 0.21).sin() + 0.2 * (x * 1.7).sin() * (x * 0.05).cos();
+                    let fade = (x / 12.0).min(1.0) * ((400.0 - x) / 20.0).min(1.0);
+                    (body * fade).clamp(0.0, 1.0)
+                })
+                .collect();
+            ui.app.set_waveform(&src, peaks);
+        }
+    }
+    if let Some((x, y)) = arg_value(&args, "--hover").and_then(|v| {
+        let (a, b) = v.split_once(',')?;
+        Some((a.parse::<f32>().ok()?, b.parse::<f32>().ok()?))
+    }) {
+        harness.hover_at(egui::pos2(x, y));
+    }
+
     for _ in 0..steps {
         harness.step();
         std::thread::sleep(std::time::Duration::from_millis(60));

@@ -463,6 +463,9 @@ fn draw_item(ui: &mut Ui, item: ToolbarItem, r: Rect, app: &mut App, st: &mut Ui
 /// The seek bar: dark track, tinted progress, accent thumb, chapter ticks,
 /// A-B markers and a time bubble on hover.
 fn seek_bar(ui: &mut Ui, r: Rect, app: &mut App, st: &mut UiState, p: &Palette) {
+    if crate::ui::music::draw_waveform_seek(ui, r, app, st) {
+        return;
+    }
     let bar = Rect::from_center_size(r.center(), vec2(r.width(), 28.0));
     let resp = ui.interact(bar, ui.id().with("seek"), Sense::click_and_drag());
     let len = app.status.length_ms;

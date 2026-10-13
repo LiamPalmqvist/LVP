@@ -8,6 +8,7 @@ pub mod ports;
 #[cfg(test)]
 pub mod testing;
 pub mod video;
+pub mod waveform;
 pub mod workers;
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -110,6 +111,7 @@ pub struct App {
     /// Set when newly opened media should take the window; the UI clears it.
     pub show_player: bool,
     media_controls: Option<Box<dyn MediaControls>>,
+    waveforms: waveform::Waveforms,
 }
 
 impl App {
@@ -157,6 +159,7 @@ impl App {
             raise_window: false,
             show_player: false,
             media_controls: None,
+            waveforms: Default::default(),
             settings,
         };
         app.engine.send(EngineCommand::SetVolume(app.settings.audio.volume));
@@ -216,6 +219,7 @@ impl App {
         if self.osd.as_ref().is_some_and(|o| o.until <= now) {
             self.osd = None;
         }
+        self.tick_waveforms();
     }
 
     fn on_engine_event(&mut self, ev: EngineEvent) {
