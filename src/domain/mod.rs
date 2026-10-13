@@ -10,5 +10,6 @@ pub mod playlist;
 pub mod playlist_format;
 pub mod settings;
 pub mod shortcuts;
+pub mod subtitles;
 pub mod time;
 pub mod toolbar;

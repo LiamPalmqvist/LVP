@@ -6,6 +6,7 @@ pub mod convert;
 pub mod fake;
 pub mod library;
 pub mod ports;
+pub mod subtitles;
 #[cfg(test)]
 pub mod testing;
 pub mod video;
