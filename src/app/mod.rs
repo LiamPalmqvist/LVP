@@ -4,6 +4,7 @@
 pub mod actions;
 pub mod fake;
 pub mod library;
+pub mod pages;
 pub mod ports;
 #[cfg(test)]
 pub mod testing;

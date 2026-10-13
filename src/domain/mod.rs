@@ -1,6 +1,7 @@
 //! Pure types and rules. Nothing in here touches the filesystem, libvlc or
 //! the UI, and nothing in here imports from other layers of this crate.
 
+pub mod browse;
 pub mod effects;
 pub mod library;
 pub mod media;
