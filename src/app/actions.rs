@@ -111,8 +111,8 @@ impl App {
             NavLeft => self.engine.send(super::EngineCommand::Navigate(super::Nav::Left)),
             NavRight => self.engine.send(super::EngineCommand::Navigate(super::Nav::Right)),
 
-            VolumeUp => self.change_volume(5),
-            VolumeDown => self.change_volume(-5),
+            VolumeUp => self.change_volume(self.settings.audio.volume_step.max(1)),
+            VolumeDown => self.change_volume(-self.settings.audio.volume_step.max(1)),
             Mute => self.toggle_mute(),
             CycleAudioTrack => self.cycle_audio_track(),
             CycleAudioDevice => self.cycle_audio_device(),
