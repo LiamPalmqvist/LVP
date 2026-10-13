@@ -2,12 +2,15 @@
 //! media information, jump to time, onboarding and about.
 
 mod about;
+mod capture;
+mod disc;
 pub mod frame;
 mod jump;
 mod network;
 mod vlc;
 
 use crate::app::App;
+use crate::domain::media::MediaItem;
 use crate::ui::state::UiState;
 
 #[derive(Default)]
@@ -26,6 +29,10 @@ pub struct DialogsState {
     login: vlc::LoginState,
     jump: jump::JumpState,
     network: network::NetworkState,
+    disc: disc::DiscState,
+    capture_state: capture::CaptureState,
+    /// Items handed to Convert / Save by another dialog.
+    convert_source: Option<Vec<MediaItem>>,
 }
 
 impl DialogsState {
@@ -49,6 +56,12 @@ impl DialogsState {
         true
     }
 
+    /// Opens Convert / Save with these items as the source.
+    pub fn convert_items(&mut self, items: Vec<MediaItem>) {
+        self.convert_source = Some(items);
+        self.convert = true;
+    }
+
     /// True when one of this module's dialogs is showing.
     pub fn any_open(&self) -> bool {
         self.about
@@ -66,6 +79,12 @@ impl DialogsState {
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
     if st.dialogs.open_network {
         network::show(ctx, app, st);
+    }
+    if st.dialogs.open_disc {
+        disc::show(ctx, app, st);
+    }
+    if st.dialogs.capture {
+        capture::show(ctx, app, st);
     }
     let d = &mut st.dialogs;
     if d.jump_to_time {
