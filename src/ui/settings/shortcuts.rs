@@ -203,9 +203,10 @@ fn dialog(ui: &mut Ui, rect: Rect, ss: &mut ShortcutsState, saved: &Shortcuts) -
         egui::epaint::Shadow { offset: [0, 12], blur: 40, spread: 0, color: Color32::from_black_alpha(110) }
             .as_shape(rect, CornerRadius::same(14)),
     );
-    ui.painter().rect_filled(rect, CornerRadius::same(14), p.bg_b1_t);
+    let fill = if p.dark { p.bg_b1_t } else { with_alpha(p.bg_b1, 0.98) };
+    ui.painter().rect_filled(rect, CornerRadius::same(14), fill);
     let header = Rect::from_min_size(rect.min, vec2(rect.width(), 96.0));
-    ui.painter().rect_filled(header, CornerRadius::same(14), if p.dark { Color32::BLACK } else { p.bg_a5 });
+    ui.painter().rect_filled(header, CornerRadius::same(14), if p.dark { Color32::BLACK } else { p.chrome });
     ui.painter().text(
         pos2(rect.min.x + 19.0, rect.min.y + 25.0),
         Align2::LEFT_CENTER,

@@ -319,11 +319,12 @@ fn body(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState) {
         egui::epaint::Shadow { offset: [0, 12], blur: 40, spread: 0, color: Color32::from_black_alpha(110) }
             .as_shape(rect, CornerRadius::same(14)),
     );
-    painter.rect_filled(rect, CornerRadius::same(14), p.bg_b1_t);
+    let window_fill = if p.dark { p.bg_b1_t } else { crate::ui::theme::with_alpha(p.bg_b1, 0.98) };
+    painter.rect_filled(rect, CornerRadius::same(14), window_fill);
 
     // Header: search, page title, close.
     let header = Rect::from_min_size(rect.min, vec2(rect.width(), 50.0));
-    let header_fill = if p.dark { Color32::BLACK } else { p.bg_a5 };
+    let header_fill = if p.dark { Color32::BLACK } else { p.chrome };
     painter.rect_filled(header, CornerRadius { nw: 14, ne: 14, sw: 0, se: 0 }, header_fill);
     let search_rect = Rect::from_min_size(rect.min + vec2(8.0, 8.0), vec2(200.0, 34.0));
     let before = st.settings.search.clone();
@@ -352,7 +353,7 @@ fn body(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState) {
     // Sidebar.
     let side =
         Rect::from_min_max(pos2(rect.min.x + 8.0, rect.min.y + 58.0), pos2(rect.min.x + 208.0, rect.max.y - 8.0));
-    ui.painter().rect_filled(side, CornerRadius::same(6), p.bg_a4);
+    ui.painter().rect_filled(side, CornerRadius::same(6), if p.dark { p.bg_a4 } else { p.bg_a2 });
     ui.scope_builder(UiBuilder::new().max_rect(side.shrink(6.0)), |ui| {
         egui::ScrollArea::vertical()
             .id_salt("settings-side")
@@ -424,7 +425,7 @@ fn sidebar(ui: &mut Ui, ss: &mut SettingsState, searching: bool) {
             let (r, resp) = ui.allocate_exact_size(vec2(188.0, 40.0), Sense::click());
             let selected = c == ss.category && !searching;
             if selected {
-                ui.painter().rect_filled(r, CornerRadius::same(2), p.bg_a1);
+                ui.painter().rect_filled(r, CornerRadius::same(2), if p.dark { p.bg_a1 } else { p.bg_b2_t });
             } else if resp.hovered() {
                 ui.painter().rect_filled(r, CornerRadius::same(2), p.hover);
             }
