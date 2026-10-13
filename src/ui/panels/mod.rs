@@ -6,6 +6,7 @@
 //! a 50pt tab strip on top.
 
 mod audio_fx;
+mod customize;
 #[allow(dead_code)] // parts of the kit are used by later panels
 mod kit;
 mod menu;
@@ -44,6 +45,7 @@ pub struct PanelsState {
     pub sleep_minutes: Option<u32>,
     /// Subtitle style edits waiting for the pointer to be released.
     sub_draft: Option<crate::domain::settings::SubtitleSettings>,
+    customize: Option<customize::CustomizeUi>,
     queue: queue::QueueUi,
     tracks: tracks::TracksUi,
     presets: presets::PresetUi,
@@ -63,6 +65,10 @@ pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
         && let Some(r) = st.panels.video_rect
     {
         stats::show(ui.ctx(), r, app);
+    }
+    if st.panels.customize_open {
+        customize::show(ui, bar, app, st);
+        return;
     }
     let Some(panel) = st.panel else { return };
     let p = pal(ui.ctx());
@@ -91,5 +97,10 @@ pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
 /// Right-click menu on the video.
 pub fn player_context_menu(resp: &Response, app: &mut App, st: &mut UiState) {
     st.panels.video_rect = Some(resp.rect);
+    if st.panels.customize_open {
+        // Keep the bar (and with it the dialog) on screen while customising.
+        st.bump_controls(1.0);
+        return;
+    }
     menu::show(resp, app, st);
 }
