@@ -199,7 +199,15 @@ pub fn grid_card(
     let is_media = matches!(tile.kind, TileKind::Media(_));
     let fill = if is_media || pic.is_some() { p.bg_a5 } else { p.bg_a2 };
     let icon_size = if is_media { 40.0 } else { 48.0 };
-    let drawn = picture(ui, img, pic.as_ref(), tile.icon, icon_size, 12, fill);
+    let audio_in_wide = shape == Shape::Wide && item.is_some_and(MediaItem::is_audio);
+    let drawn = if audio_in_wide && pic.is_some() {
+        // Square cover art centred on a dark 16:9 card rather than cropped.
+        ui.painter().rect_filled(img, 12, fill);
+        let sq = Rect::from_center_size(img.center(), vec2(img.height(), img.height()));
+        pic.as_ref().is_some_and(|p| images::paint_cover(ui, sq, p, 0))
+    } else {
+        picture(ui, img, pic.as_ref(), tile.icon, icon_size, 12, fill)
+    };
     if drawn && !hovered {
         ui.painter().rect_filled(img, 12, with_alpha(Color32::BLACK, 0.2));
     }

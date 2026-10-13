@@ -695,11 +695,7 @@ fn network(app: &App, q: &str, compact: bool) -> PageModel {
         let tiles: Vec<Tile> = services
             .iter()
             .filter(|s| s.category == cat && keep_text(&s.long_name, q))
-            .map(|s| {
-                let mut t = nav_tile(s.long_name.clone(), Icon::Streaming, Page::Service(s.name.clone()));
-                t.subtitle = Some(category_label(cat).to_string());
-                t
-            })
+            .map(|s| nav_tile(s.long_name.clone(), Icon::Streaming, Page::Service(s.name.clone())))
             .collect();
         if tiles.is_empty() {
             continue;
@@ -731,13 +727,15 @@ fn network(app: &App, q: &str, compact: bool) -> PageModel {
         }
         let _ = n;
         m.sections.push(flat);
-    } else if !streams.is_empty() {
+    } else {
+        // "Streams" first: open a URL, then the recent ones.
         let mut s = media_section(streams, Shape::Square, None);
         for (t, item) in s.tiles.iter_mut().zip(&s.playable) {
             t.subtitle = Some(item.source.mrl());
         }
-        s.title = Some("Recent Streams".into());
-        m.sections.push(s);
+        s.tiles.insert(0, action_tile("Open Network Stream", Icon::Add, Act::OpenStream));
+        s.title = Some("Streams".into());
+        m.sections.insert(0, s);
     }
     m
 }

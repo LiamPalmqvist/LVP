@@ -18,6 +18,8 @@
 //!   --onboarding          show the first-run wizard
 //!   --steps N             frames to run before capturing (default 6)
 //!   --list                library list view; --sort LABEL picks a sort option ("Unwatched First")
+//!   --lib-page NAME       songs, albums, artists, genres, continue, listen, folders, music-folder,
+//!                         service:NAME, album:NAME, artist:NAME
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -227,6 +229,24 @@ fn main() {
         if let Some(s) = arg_value(&args, "--sort") {
             st.library.sort =
                 notvlc::domain::browse::SortOption::ALL.iter().copied().find(|o| o.label().eq_ignore_ascii_case(&s));
+        }
+        // --lib-page songs|albums|artists|genres|continue|service:NAME|album:NAME for the other library pages.
+        if let Some(lp) = arg_value(&args, "--lib-page") {
+            use notvlc::ui::pages::Page;
+            st.page = match lp.as_str() {
+                "songs" => Page::Songs,
+                "albums" => Page::Albums,
+                "artists" => Page::Artists,
+                "genres" => Page::Genres,
+                "continue" => Page::ContinueWatching,
+                "listen" => Page::ListenAgain,
+                "folders" => Page::FrequentFolders,
+                p if p.starts_with("service:") => Page::Service(p[8..].to_string()),
+                p if p.starts_with("album:") => Page::Album(p[6..].to_string()),
+                p if p.starts_with("artist:") => Page::Artist(p[7..].to_string()),
+                "music-folder" => Page::MusicFolder(home.join("Music/juxtopposed")),
+                _ => Page::Home,
+            };
         }
     }
 
