@@ -53,7 +53,15 @@ pub fn show_player(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState) {
     let painter = ui.painter_at(rect);
     painter.rect_filled(rect, 0, p.bg_a3);
 
-    let l = layout(rect, ui.ctx().content_rect().center().x);
+    // In picture-in-picture the control bar overlays the bottom of a small
+    // window; keep the art and title clear of it so they never jump.
+    let lay = if st.pip {
+        let bar = crate::ui::shell::controls::height(app);
+        Rect::from_min_max(rect.min, pos2(rect.max.x, (rect.max.y - bar).max(rect.min.y + 120.0)))
+    } else {
+        rect
+    };
+    let l = layout(lay, ui.ctx().content_rect().center().x);
 
     // Backdrop: the art again, centred behind it and covering the area,
     // blurred and dimmed.

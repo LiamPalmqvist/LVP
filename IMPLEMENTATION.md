@@ -135,6 +135,10 @@ Customisable toolbar, player and file context menus, mini player, music view.
   - [ ] Right-click menu (`6065:13616`), mini player and music view match their frames
   - [x] Mini player matches `970:3091` in every variant (default, hover, queue open, hover with
     queue, ended) and sits in the library's corner as in `970:2703`
+  - [x] Music view matches `4767:23726` and `4778:25123` (with the library column), in the light
+    theme, in hide-UI and at picture-in-picture size
+  - [x] Music seek bar draws real loudness peaks (`App::waveform`, VLC transcodes to a 2 kHz mono
+    WAV in the background; peaks cached under the cache dir) as in control bar `491:1780`
 - **Touches:** `ui/shell/controls.rs`, `ui/panels/`, `ui/music/`
 - **Depends on:** M1
 
@@ -177,12 +181,16 @@ Discover renderers and cast the current item ("Render" in video quick settings).
 - **Depends on:** M1
 - **Notes:** renderer discovery and `SetRenderer` done in the engine.
 
-### O5: Audio visualiser  `[ ]`
+### O5: Audio visualiser  `[~]`
 
 VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music view's visualiser.
 
 - **Value:** the music view in the design centres on it.
 - **Depends on:** M8
+- **Notes:** the music view's own bar visualiser is done (`ui/music/visualiser.rs`): libvlc 3 gives
+  no samples without replacing its audio output, so it follows a smooth pseudo-signal scaled by the
+  track's waveform loudness at the playhead, and settles when paused. VLC's own visualisations show
+  as a picture through the shell when `audio.visualizer` is set.
 
 ### O6: Batch subtitle matching  `[ ]`
 
