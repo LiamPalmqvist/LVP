@@ -17,6 +17,10 @@
 //!   --idle                nothing playing
 //!   --onboarding          show the first-run wizard
 //!   --steps N             frames to run before capturing (default 6)
+//!   --expand-cards        open every effect card in quick settings
+//!   --tall                let the popover use the whole window height
+//!   --context-menu        open the player's right-click menu
+//!   --customize           open the Customize Player dialog
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -219,6 +223,16 @@ fn main() {
         if has(&args, "--collapsed") {
             st.sidebar_expanded = false;
         }
+        // ---- player panels ----
+        // --expand-cards opens every effect card; --tall lets a popover use
+        // the whole window height; --context-menu opens the player menu;
+        // --customize opens the Customize Player dialog.
+        st.panels.expand_cards = has(&args, "--expand-cards");
+        st.panels.fill_height = has(&args, "--tall");
+        if has(&args, "--context-menu") {
+            st.panels.context_menu_at = Some(egui::pos2(w * 0.4, h * 0.2));
+        }
+        st.panels.customize_open = has(&args, "--customize");
     }
 
     // ---- music: mini player, music view, waveform ------------------------
