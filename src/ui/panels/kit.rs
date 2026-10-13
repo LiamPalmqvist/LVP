@@ -197,17 +197,31 @@ pub fn value_box(ui: &mut Ui, id: impl std::hash::Hash, display: &str, width: f3
 }
 
 pub fn value_box_sized(ui: &mut Ui, id: impl std::hash::Hash, display: &str, size: Vec2) -> Option<BoxEvent> {
+    let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
+    value_box_in(ui, rect, resp.hovered(), id, display, 0.0)
+}
+
+/// A value box in an already allocated `rect`; `reserve` keeps room on the
+/// right (for a swatch).
+fn value_box_in(
+    ui: &mut Ui,
+    rect: Rect,
+    hovered: bool,
+    id: impl std::hash::Hash,
+    display: &str,
+    reserve: f32,
+) -> Option<BoxEvent> {
     let p = pal(ui.ctx());
     let te_id = ui.make_persistent_id(id).with("te");
-    let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
     let focused = ui.memory(|m| m.has_focus(te_id));
-    paint_box(ui, rect, focused, resp.hovered());
+    paint_box(ui, rect, focused, hovered);
     let mut buf = if focused {
         ui.data(|d| d.get_temp::<String>(te_id)).unwrap_or_else(|| display.to_string())
     } else {
         display.to_string()
     };
     let inner = rect.shrink2(vec2(12.0, 0.0));
+    let inner = Rect::from_min_max(inner.min, pos2(inner.max.x - reserve, inner.max.y));
     let te = egui::TextEdit::singleline(&mut buf)
         .id(te_id)
         .frame(false)
@@ -226,7 +240,7 @@ pub fn value_box_sized(ui: &mut Ui, id: impl std::hash::Hash, display: &str, siz
             out = Some(BoxEvent::Commit(buf));
         }
     }
-    if out.is_none() && !focused && (resp.hovered() || r.hovered()) {
+    if out.is_none() && !focused && (hovered || r.hovered()) {
         let s = ui.input(|i| i.raw_scroll_delta.y);
         if s.abs() > 0.5 {
             out = Some(BoxEvent::Scroll(s.signum()));
@@ -777,4 +791,69 @@ pub fn chip(ui: &mut Ui, text: &str, tip: &str) -> Response {
     ui.painter().galley(rect.center() - galley.size() / 2.0, galley, col);
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     if tip.is_empty() { resp } else { resp.on_hover_text(tip) }
+}
+
+// ---- colour box ------------------------------------------------------------------------------
+
+fn rgb_color(rgb: u32) -> Color32 {
+    Color32::from_rgb((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
+}
+
+/// "#RRGGBB" in a value box with a 22pt swatch that opens a picker.
+pub fn color_box(ui: &mut Ui, id: impl std::hash::Hash + Copy, rgb: &mut u32, size: Vec2) -> bool {
+    let p = pal(ui.ctx());
+    let mut changed = false;
+    let shown = format!("#{:06X}", *rgb & 0xFFFFFF);
+    let (rect, resp) = ui.allocate_exact_size(size, Sense::hover());
+    if let Some(BoxEvent::Commit(t)) = value_box_in(ui, rect, resp.hovered(), id, &shown, 30.0)
+        && let Ok(v) = u32::from_str_radix(t.trim().trim_start_matches('#'), 16)
+    {
+        *rgb = v & 0xFFFFFF;
+        changed = true;
+    }
+    let sw = Rect::from_center_size(pos2(rect.max.x - 18.0, rect.center().y), Vec2::splat(22.0));
+    let resp = ui.interact(sw, ui.make_persistent_id(id).with("swatch"), Sense::click());
+    ui.painter().rect_filled(sw, CornerRadius::same(2), rgb_color(*rgb));
+    ui.painter().rect_stroke(
+        sw,
+        CornerRadius::same(2),
+        Stroke::new(1.5, Color32::from_white_alpha(54)),
+        StrokeKind::Inside,
+    );
+    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+    egui::Popup::menu(&resp)
+        .frame(list_frame(&p).inner_margin(egui::Margin::same(8)))
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+        .show(|ui| {
+            let mut c = rgb_color(*rgb);
+            if egui::widgets::color_picker::color_picker_color32(ui, &mut c, egui::color_picker::Alpha::Opaque) {
+                *rgb = ((c.r() as u32) << 16) | ((c.g() as u32) << 8) | c.b() as u32;
+                changed = true;
+            }
+        });
+    changed
+}
+
+/// The quick-settings footer preset box: a plain BG/B2 bar with a chevron.
+pub fn preset_box(ui: &mut Ui, text: &str) -> Response {
+    let p = pal(ui.ctx());
+    let w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(vec2(w, 42.0), Sense::click());
+    ui.painter().rect_filled(rect, CornerRadius::same(6), if resp.hovered() { p.bg_a5 } else { p.bg_b2 });
+    widgets::text_clipped(
+        ui,
+        pos2(rect.min.x + 16.0, rect.center().y),
+        Align2::LEFT_CENTER,
+        text,
+        font::regular(14.0),
+        p.fg_a2,
+        rect.width() - 70.0,
+    );
+    widgets::paint_icon(
+        ui,
+        Rect::from_center_size(pos2(rect.max.x - 28.0, rect.center().y), Vec2::splat(24.0)),
+        Icon::ChevronUp,
+        p.fg_a2,
+    );
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

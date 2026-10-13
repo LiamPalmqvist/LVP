@@ -5,10 +5,15 @@
 //! wide, right-aligned 20pt in from the bar's right end and 20pt above it,
 //! a 50pt tab strip on top.
 
+mod audio_fx;
 #[allow(dead_code)] // parts of the kit are used by later panels
 mod kit;
+mod presets;
 mod queue;
+mod quick;
+mod stats;
 mod tracks;
+mod video_fx;
 
 use egui::{Pos2, Rect, Response, Ui, pos2, vec2};
 
@@ -27,8 +32,13 @@ pub struct PanelsState {
     pub show_stats: bool,
     /// The video area, recorded each frame for overlays.
     pub video_rect: Option<Rect>,
+    /// The sleep timer length last chosen (cleared when the timer ends).
+    pub sleep_minutes: Option<u32>,
+    /// Subtitle style edits waiting for the pointer to be released.
+    sub_draft: Option<crate::domain::settings::SubtitleSettings>,
     queue: queue::QueueUi,
     tracks: tracks::TracksUi,
+    presets: presets::PresetUi,
 }
 
 /// Design heights of the popovers.
@@ -41,6 +51,11 @@ fn design_height(panel: PlayerPanel) -> f32 {
 
 /// Draws the open popover anchored above the right end of the control bar.
 pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
+    if st.panels.show_stats
+        && let Some(r) = st.panels.video_rect
+    {
+        stats::show(ui.ctx(), r, app);
+    }
     let Some(panel) = st.panel else { return };
     let p = pal(ui.ctx());
     let top = ui.max_rect().min.y + 12.0;
@@ -55,9 +70,7 @@ pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
             match panel {
                 PlayerPanel::Queue(tab) => queue::show(ui, app, st, tab),
                 PlayerPanel::Tracks(tab) => tracks::show(ui, app, st, tab),
-                PlayerPanel::QuickSettings(tab) => {
-                    let _ = tab;
-                }
+                PlayerPanel::QuickSettings(tab) => quick::show(ui, app, st, tab),
             }
         });
     });

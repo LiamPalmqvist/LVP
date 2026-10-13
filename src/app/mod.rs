@@ -5,6 +5,7 @@ pub mod actions;
 pub mod fake;
 pub mod library;
 pub mod ports;
+pub mod presets;
 #[cfg(test)]
 pub mod testing;
 pub mod video;
