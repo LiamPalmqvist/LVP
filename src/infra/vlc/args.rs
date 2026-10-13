@@ -362,4 +362,23 @@ mod tests {
         let a = playback(&s);
         assert_eq!(&a[a.len() - 2..], &["--no-audio".to_string(), "--foo=1".to_string()]);
     }
+
+    #[test]
+    fn audio_page_options_become_args() {
+        let mut s = Settings::default();
+        let a = playback(&s);
+        assert!(
+            !a.iter().any(|x| x == "--no-audio" || x.starts_with("--stereo-mode") || x.starts_with("--audio-replay"))
+        );
+        s.audio.enabled = false;
+        s.audio.speaker_setup = SpeakerSetup::Mono;
+        s.audio.replay_gain = ReplayGain::Album;
+        s.audio.replay_gain_preamp = 2.5;
+        let a = playback(&s);
+        for want in
+            ["--no-audio", "--stereo-mode=7", "--audio-replay-gain-mode=album", "--audio-replay-gain-preamp=2.5"]
+        {
+            assert!(a.contains(&want.to_string()), "{want} missing from {a:?}");
+        }
+    }
 }
