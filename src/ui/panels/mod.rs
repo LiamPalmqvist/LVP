@@ -8,6 +8,7 @@
 mod audio_fx;
 #[allow(dead_code)] // parts of the kit are used by later panels
 mod kit;
+mod menu;
 mod presets;
 mod queue;
 mod quick;
@@ -88,6 +89,7 @@ pub fn show_popovers(ui: &mut Ui, bar: Rect, app: &mut App, st: &mut UiState) {
 }
 
 /// Right-click menu on the video.
-pub fn player_context_menu(resp: &Response, _app: &mut App, st: &mut UiState) {
+pub fn player_context_menu(resp: &Response, app: &mut App, st: &mut UiState) {
     st.panels.video_rect = Some(resp.rect);
+    menu::show(resp, app, st);
 }
