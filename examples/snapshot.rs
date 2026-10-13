@@ -21,6 +21,10 @@
 //!   --tall                let the popover use the whole window height
 //!   --context-menu        open the player's right-click menu
 //!   --customize           open the Customize Player dialog
+//!   --settings-advanced   expand the settings page's Advanced Options
+//!   --settings-eq         open the equalizer on the Audio settings page
+//!   --settings-scroll Y   scroll the settings page to Y points
+//!   --settings-search Q   open settings with a search
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -233,6 +237,19 @@ fn main() {
             st.panels.context_menu_at = Some(egui::pos2(w * 0.4, h * 0.2));
         }
         st.panels.customize_open = has(&args, "--customize");
+        // Settings: --settings-advanced, --settings-eq, --settings-scroll Y, --settings-search TEXT.
+        if has(&args, "--settings-advanced") {
+            let c = st.settings.category;
+            st.settings.set_advanced(c, true);
+        }
+        st.settings.eq_open = has(&args, "--settings-eq");
+        if let Some(y) = arg_value(&args, "--settings-scroll") {
+            st.settings.scroll_to = y.parse().ok();
+        }
+        if let Some(q) = arg_value(&args, "--settings-search") {
+            st.settings.open = true;
+            st.settings.search = q;
+        }
     }
 
     // ---- music: mini player, music view, waveform ------------------------

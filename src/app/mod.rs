@@ -117,7 +117,11 @@ pub struct App {
 
 impl App {
     pub fn new(engine: Arc<dyn MediaEngine>, probe: Arc<dyn MediaProbe>, store: Arc<dyn Store>) -> Self {
-        let settings: Settings = store.load("settings").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+        let mut settings: Settings =
+            store.load("settings").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
+        if !settings.audio.remember_volume {
+            settings.audio.volume = settings.audio.startup_volume;
+        }
         let library = Library::load(store.clone());
         let threads = std::thread::available_parallelism().map(|n| n.get().clamp(2, 4)).unwrap_or(2);
         let workers = Workers::new(probe, threads);

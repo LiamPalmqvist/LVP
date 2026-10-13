@@ -114,7 +114,7 @@ VLC's login prompts.
 - **Touches:** `infra/vlc/helper.rs`, `infra/vlc/dialogs.rs`, `ui/pages/`, `ui/dialogs/`
 - **Depends on:** M1
 
-### M7: Settings  `[~]`
+### M7: Settings  `[x]`
 
 All thirteen settings pages with their advanced sections, dark/light/system theme, accent colours,
 keyboard shortcut editor, persistence.
@@ -122,8 +122,8 @@ keyboard shortcut editor, persistence.
 - **Acceptance:**
   - [x] Every option on every page exists in `domain/settings.rs` and round-trips through JSON
   - [x] Options libvlc reads at start-up are passed as instance args (`infra/vlc/args.rs`)
-  - [ ] Each page matches its `Settings - *` frame in a snapshot
-  - [ ] Keyboard Shortcuts dialog (`2437:14832`) edits bindings with conflict warnings
+  - [x] Each page matches its `Settings - *` frame in a snapshot
+  - [x] Keyboard Shortcuts dialog (`2437:14832`) edits bindings with conflict warnings
 - **Touches:** `domain/settings.rs`, `infra/vlc/args.rs`, `ui/settings/`
 - **Depends on:** none
 
@@ -203,12 +203,15 @@ VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music
 - **Value:** saves attaching subtitles one file at a time.
 - **Depends on:** M2
 
-### O7: Extensions  `[ ]`
+### O7: Extensions  `[x]`
 
 Manage VLC Lua add-ons (playlist parsers, discovery, metadata) in the user's VLC Lua folders.
 
 - **Value:** extends what libvlc can open (site parsers).
 - **Depends on:** M7
+- **Notes:** Settings > Extensions lists, installs (by kind), enables/disables (renames to `*.disabled`)
+  and removes scripts in VLC's user Lua folder. "Load add-ons on startup" is stored only: libvlc 3
+  has no switch to skip user Lua scripts.
 
 ### O8: Conversion profiles  `[ ]`
 

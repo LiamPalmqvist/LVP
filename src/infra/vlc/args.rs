@@ -131,6 +131,16 @@ pub fn playback(s: &Settings) -> Vec<String> {
     if !au.effects.time_stretch {
         a.push("--no-audio-time-stretch".into());
     }
+    if !au.enabled {
+        a.push("--no-audio".into());
+    }
+    if au.speaker_setup != SpeakerSetup::Automatic {
+        a.push(format!("--stereo-mode={}", au.speaker_setup.vlc_value()));
+    }
+    if au.replay_gain != ReplayGain::Off {
+        a.push(format!("--audio-replay-gain-mode={}", au.replay_gain.vlc_value()));
+        a.push(format!("--audio-replay-gain-preamp={}", au.replay_gain_preamp));
+    }
     if let Some((module, effect)) = au.visualizer.vlc_module() {
         a.push(format!("--audio-visual={module}"));
         if let Some(e) = effect {
@@ -351,5 +361,24 @@ mod tests {
         s.general.extra_args = "--no-audio  --foo=1".into();
         let a = playback(&s);
         assert_eq!(&a[a.len() - 2..], &["--no-audio".to_string(), "--foo=1".to_string()]);
+    }
+
+    #[test]
+    fn audio_page_options_become_args() {
+        let mut s = Settings::default();
+        let a = playback(&s);
+        assert!(
+            !a.iter().any(|x| x == "--no-audio" || x.starts_with("--stereo-mode") || x.starts_with("--audio-replay"))
+        );
+        s.audio.enabled = false;
+        s.audio.speaker_setup = SpeakerSetup::Mono;
+        s.audio.replay_gain = ReplayGain::Album;
+        s.audio.replay_gain_preamp = 2.5;
+        let a = playback(&s);
+        for want in
+            ["--no-audio", "--stereo-mode=7", "--audio-replay-gain-mode=album", "--audio-replay-gain-preamp=2.5"]
+        {
+            assert!(a.contains(&want.to_string()), "{want} missing from {a:?}");
+        }
     }
 }

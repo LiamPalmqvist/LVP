@@ -453,6 +453,36 @@ choice!(MediaRole {
     Accessibility => "Accessibility", Test => "Test"
 } default Video);
 choice!(VisualSize { MatchWindow => "Match window", Small => "Small", Large => "Large" } default MatchWindow);
+choice!(SpeakerSetup {
+    Automatic => "Automatic", Stereo => "Stereo", Mono => "Mono", Headphones => "Headphones",
+    ReverseStereo => "Reverse stereo", DolbySurround => "Dolby Surround"
+} default Automatic);
+choice!(ReplayGain { Off => "Off", Track => "Track", Album => "Album" } default Off);
+
+impl SpeakerSetup {
+    /// VLC's `stereo-mode` value (0 leaves the decoder's layout alone).
+    pub fn vlc_value(self) -> i32 {
+        match self {
+            SpeakerSetup::Automatic => 0,
+            SpeakerSetup::Stereo => 1,
+            SpeakerSetup::ReverseStereo => 2,
+            SpeakerSetup::DolbySurround => 5,
+            SpeakerSetup::Headphones => 6,
+            SpeakerSetup::Mono => 7,
+        }
+    }
+}
+
+impl ReplayGain {
+    /// VLC's `audio-replay-gain-mode` value.
+    pub fn vlc_value(self) -> &'static str {
+        match self {
+            ReplayGain::Off => "none",
+            ReplayGain::Track => "track",
+            ReplayGain::Album => "album",
+        }
+    }
+}
 
 impl Visualizer {
     /// Value for `--audio-visual`, `--effect-list` style selection.
@@ -485,6 +515,17 @@ pub struct AudioSettings {
     pub output_device: Option<String>,
     pub volume: i32,
     pub max_volume: i32,
+    pub enabled: bool,
+    pub speaker_setup: SpeakerSetup,
+    /// Start at the last used volume, or always at `startup_volume`.
+    pub remember_volume: bool,
+    pub startup_volume: i32,
+    /// Percentage points per volume up/down shortcut.
+    pub volume_step: i32,
+    /// Compress loud passages (drives the compressor with a gentle preset).
+    pub night_mode: bool,
+    pub replay_gain: ReplayGain,
+    pub replay_gain_preamp: f32,
 }
 
 impl Default for AudioSettings {
@@ -502,6 +543,14 @@ impl Default for AudioSettings {
             output_device: None,
             volume: 100,
             max_volume: 125,
+            enabled: true,
+            speaker_setup: SpeakerSetup::Automatic,
+            remember_volume: true,
+            startup_volume: 100,
+            volume_step: 5,
+            night_mode: false,
+            replay_gain: ReplayGain::Off,
+            replay_gain_preamp: 0.0,
         }
     }
 }
