@@ -121,6 +121,9 @@ pub struct LibraryState {
     scroll_to_selected: bool,
     /// The page the selection and search belong to.
     seen_page: Option<Page>,
+    /// When the current page was entered: the second click of a
+    /// double-click that opened it must not activate a tile on it.
+    entered: Option<std::time::Instant>,
     /// The item a context-menu action applies to (media information,
     /// convert, stream), for the dialogs to read.
     pub action_item: Option<MediaItem>,
@@ -146,6 +149,11 @@ impl LibraryState {
     fn sort_choice(&self) -> Option<SortOption> {
         self.sort
     }
+
+    /// False just after navigating, while a double-click may still land.
+    fn settled(&self) -> bool {
+        self.entered.is_none_or(|t| t.elapsed() > std::time::Duration::from_millis(400))
+    }
 }
 
 /// Plays `items` starting at `index`; video switches to the player.
@@ -168,6 +176,7 @@ fn track_page(st: &mut UiState) {
         st.library.search.clear();
         st.library.drag = None;
         st.library.rename = None;
+        st.library.entered = Some(std::time::Instant::now());
     }
 }
 

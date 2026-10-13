@@ -223,12 +223,13 @@ fn tile(
         }
     }
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-    if resp.clicked() {
+    let settled = st.library.settled();
+    if resp.clicked() && settled {
         st.library.selected = Some(ti);
         if item.is_none() || play_hit {
             activate(app, st, sec, ti);
         }
-    } else if resp.double_clicked() && item.is_some() {
+    } else if resp.double_clicked() && item.is_some() && settled {
         activate(app, st, sec, ti);
     }
     if reorder.is_some() {
@@ -371,7 +372,8 @@ fn section_tile(
     };
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     let on_badge = badge.is_some_and(|b| ui.input(|i| i.pointer.interact_pos()).is_some_and(|q| b.contains(q)));
-    if (resp.clicked() && (item.is_none() || on_badge)) || (resp.double_clicked() && item.is_some()) {
+    let settled = st.library.settled();
+    if settled && ((resp.clicked() && (item.is_none() || on_badge)) || (resp.double_clicked() && item.is_some())) {
         activate(app, st, sec, ti);
     }
     tile_menu(&resp, app, st, m, sec, ti);

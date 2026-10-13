@@ -365,7 +365,7 @@ pub fn page_menu(button: &Response, app: &mut App, st: &mut UiState, m: &PageMod
             PageKind::Folder { path, music } => {
                 folder_page_rows(ui, app, st, path.clone(), *music);
             }
-            PageKind::Root { music } if app.settings.library.video_folders.len() == 1 || *music => {
+            PageKind::Root { music } => {
                 let roots = if *music {
                     app.settings.library.music_folders.clone()
                 } else {

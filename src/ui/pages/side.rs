@@ -150,7 +150,8 @@ fn rows(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
                     let selected = flat && st.library.selected == Some(ti);
                     cards::list_row(ui, app, r, t, item, resp.hovered(), selected, false);
                     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-                    if resp.clicked() {
+                    let settled = st.library.settled();
+                    if resp.clicked() && settled {
                         if flat {
                             st.library.selected = Some(ti);
                         }
@@ -158,7 +159,7 @@ fn rows(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
                             view::activate(app, st, sec, ti);
                         }
                     }
-                    if resp.double_clicked() && item.is_some() {
+                    if resp.double_clicked() && item.is_some() && settled {
                         view::activate(app, st, sec, ti);
                     }
                     view::tile_menu(&resp, app, st, m, sec, ti);
