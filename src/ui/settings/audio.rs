@@ -341,11 +341,9 @@ fn equalizer(ui: &mut Ui, eq: &mut EqualizerSettings, open: &mut bool) {
         let slider_rect = Rect::from_min_size(pos2(x, area.min.y), vec2(col_w, 320.0));
         let (label, value): (&str, &mut f32) =
             if i == 0 { ("Preamp", &mut eq.preamp) } else { (EQ_BAND_LABELS[i - 1], &mut eq.bands[i - 1]) };
-        let r = ui
-            .scope_builder(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
-                widgets::vslider(ui, value, EQ_RANGE.0..=EQ_RANGE.1, vec2(col_w, 320.0))
-            })
-            .inner;
+        let r = kit::place(ui, egui::UiBuilder::new().max_rect(slider_rect), |ui| {
+            widgets::vslider(ui, value, EQ_RANGE.0..=EQ_RANGE.1, vec2(col_w, 320.0))
+        });
         if r.changed() && i > 0 {
             changed_band = true;
         }

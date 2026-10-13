@@ -124,12 +124,10 @@ fn folder_list(ui: &mut Ui, title: &str, folders: &mut Vec<PathBuf>) {
             );
         }
         let br = Rect::from_min_size(pos2(r.max.x - 38.0, r.center().y - 16.0), vec2(32.0, 32.0));
-        let clicked = ui
-            .scope_builder(egui::UiBuilder::new().max_rect(br), |ui| {
-                widgets::icon_button_sized(ui, Icon::Remove, vec2(32.0, 32.0), 20.0, false, "Remove from the library")
-                    .clicked()
-            })
-            .inner;
+        let clicked = kit::place(ui, egui::UiBuilder::new().max_rect(br), |ui| {
+            widgets::icon_button_sized(ui, Icon::Remove, vec2(32.0, 32.0), 20.0, false, "Remove from the library")
+                .clicked()
+        });
         if clicked {
             remove = Some(i);
         }

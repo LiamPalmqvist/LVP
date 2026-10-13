@@ -650,3 +650,11 @@ pub fn confirm(ctx: &egui::Context, id: &str, title: &str, body: &str, ok: &str)
     }
     out
 }
+
+/// Runs `add` in a child placed at `builder`'s rect without moving the
+/// parent's cursor (unlike `Ui::scope_builder`), for content drawn inside a
+/// rect that was already allocated.
+pub fn place<R>(ui: &mut Ui, builder: UiBuilder, add: impl FnOnce(&mut Ui) -> R) -> R {
+    let mut child = ui.new_child(builder);
+    add(&mut child)
+}
