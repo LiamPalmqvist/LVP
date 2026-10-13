@@ -16,10 +16,11 @@ pub const TAB_H: f32 = 50.0;
 /// Temp-data flag that opens every effect card by default.
 pub const EXPAND_ALL: &str = "panels-expand-cards";
 
-/// The popover surface: BG/B1 at 95%, radius 10.
+/// The popover surface: BG/B1, radius 10. Drawn opaque: the design's 95%
+/// relies on a background blur egui does not have.
 pub fn popover_frame(p: &Palette) -> egui::Frame {
     egui::Frame::new()
-        .fill(p.bg_b1_t)
+        .fill(p.bg_b1)
         .corner_radius(10)
         .stroke(Stroke::new(1.0, p.divider_dim))
         .shadow(egui::epaint::Shadow { offset: [0, 8], blur: 30, spread: 0, color: Color32::from_black_alpha(118) })
@@ -621,15 +622,6 @@ pub fn slider(ui: &mut Ui, value: &mut f64, range: std::ops::RangeInclusive<f64>
         resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     }
     resp
-}
-
-pub fn slider_f32(ui: &mut Ui, value: &mut f32, range: std::ops::RangeInclusive<f32>, s: &Sl) -> Response {
-    let mut v = *value as f64;
-    let r = slider(ui, &mut v, *range.start() as f64..=*range.end() as f64, s);
-    if r.changed() {
-        *value = v as f32;
-    }
-    r
 }
 
 pub fn slider_i32(ui: &mut Ui, value: &mut i32, range: std::ops::RangeInclusive<i32>, s: &Sl) -> Response {

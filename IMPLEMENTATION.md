@@ -58,10 +58,11 @@ speed and duration factor; subtitle styling.
 
 - **Acceptance:**
   - [x] Engine reports track lists and switches tracks (`EngineCommand::Set*Track`)
-  - [ ] Track popovers and the Subtitles quick-settings tab match their design frames
+  - [x] Track popovers and the Subtitles quick-settings tab match their design frames
   - [ ] Subtitle styling options reach libvlc (freetype args) and apply on the next file
 - **Touches:** `infra/vlc/engine.rs`, `ui/panels/`
 - **Depends on:** M1
+- **Notes:** panels done (`ui/panels/tracks.rs`, `quick.rs`); "Show Subtitle Timeline on Seekbar" is stored in `PanelsState::subtitle_timeline` for the seek bar to read.
 
 ### M3: Audio and video effects  `[~]`
 
@@ -70,10 +71,11 @@ picture adjust, sharpen, banding removal, grain, colour effects, crop, deinterla
 
 - **Acceptance:**
   - [x] `infra/vlc/filters.rs` maps every effect to VLC module variables (unit-tested)
-  - [ ] Effect panels match `Audio - *` and `Video - *` component frames
+  - [x] Effect panels match `Audio - *` and `Video - *` component frames
   - [ ] Changing a slider changes playback live (libvlccore available)
 - **Touches:** `domain/effects.rs`, `infra/vlc/filters.rs`, `ui/panels/`
 - **Depends on:** M1
+- **Notes:** quick settings Video/Audio tabs and effect cards in `ui/panels/video_fx.rs`, `audio_fx.rs`; named effect presets in `app/presets.rs`. Live effect on playback still to be checked in the running app.
 
 ### M4: Playlists and queue  `[~]`
 
@@ -86,6 +88,7 @@ bookmarks and chapters panel.
   - [ ] Queue panel and playlist pages match their frames
 - **Touches:** `domain/playlist*.rs`, `app/library.rs`, `ui/pages/`, `ui/panels/`
 - **Depends on:** M1
+- **Notes:** the Queue / Bookmarks / Chapters popover matches `491:1780` (`ui/panels/queue.rs`); playlist pages pending.
 
 ### M5: Library  `[~]`
 
@@ -131,10 +134,11 @@ Customisable toolbar, player and file context menus, mini player, music view.
 - **Acceptance:**
   - [x] Toolbar layout model with insert/remove rules (`domain::toolbar`)
   - [x] Control bar draws every toolbar item
-  - [ ] Customize Player dialog (`2160:6137`) edits the layout by drag and drop
+  - [x] Customize Player dialog (`2160:6137`) edits the layout by drag and drop
   - [ ] Right-click menu (`6065:13616`), mini player and music view match their frames
 - **Touches:** `ui/shell/controls.rs`, `ui/panels/`, `ui/music/`
 - **Depends on:** M1
+- **Notes:** the right-click menu matches `6065:13616` (`ui/panels/menu.rs`); mini player and music view pending.
 
 ---
 

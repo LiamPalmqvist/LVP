@@ -7,7 +7,6 @@
 
 mod audio_fx;
 mod customize;
-#[allow(dead_code)] // parts of the kit are used by later panels
 mod kit;
 mod menu;
 mod presets;
