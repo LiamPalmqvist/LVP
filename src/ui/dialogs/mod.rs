@@ -3,6 +3,7 @@
 
 mod about;
 mod capture;
+mod convert;
 mod disc;
 pub mod frame;
 mod jump;
@@ -33,6 +34,7 @@ pub struct DialogsState {
     disc: disc::DiscState,
     capture_state: capture::CaptureState,
     info: media_info::InfoState,
+    convert_state: convert::ConvertState,
     /// Items handed to Convert / Save by another dialog.
     convert_source: Option<Vec<MediaItem>>,
 }
@@ -52,6 +54,10 @@ impl DialogsState {
             "onboarding" => &mut self.onboarding,
             "add_subtitles" => &mut self.add_subtitles,
             "new_playlist" => &mut self.new_playlist,
+            "convert_profile" => {
+                self.convert_state.open_editor = true;
+                &mut self.convert
+            }
             "media_info_codec" | "media_info_stats" => {
                 self.info.set_tab(if name.ends_with("codec") { 1 } else { 2 });
                 &mut self.media_info
@@ -91,6 +97,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
     }
     if st.dialogs.capture {
         capture::show(ctx, app, st);
+    }
+    if st.dialogs.convert {
+        convert::show(ctx, app, &mut st.dialogs);
     }
     let d = &mut st.dialogs;
     if d.media_info {

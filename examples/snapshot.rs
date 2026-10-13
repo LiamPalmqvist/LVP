@@ -288,6 +288,21 @@ fn main() {
             st.stats.decoded_audio = 6100;
             st.stats.played_abuffers = 6100;
         }
+        if arg_value(&args, "--dialog").as_deref() == Some("convert") {
+            use notvlc::app::JobState;
+            ui.app.jobs.push(JobState {
+                id: 1,
+                label: "The_Wand_S01E01.mp4 to The_Wand_S01E01.webm".into(),
+                progress: 0.62,
+                finished: None,
+            });
+            ui.app.jobs.push(JobState {
+                id: 2,
+                label: "untangle to untangle.flac".into(),
+                progress: 1.0,
+                finished: Some((true, "Done".into())),
+            });
+        }
         if arg_value(&args, "--dialog").as_deref() == Some("open_network") {
             ui.app.settings.network.recent_urls =
                 vec!["https://www.example.com/live/playlist.m3u8".into(), "rtsp://192.168.1.10:554/stream".into()];

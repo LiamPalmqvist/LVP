@@ -45,11 +45,12 @@ A-B loop, jumps, titles and chapters, fullscreen, hide UI; video drawn in the re
 - **Acceptance:**
   - [x] `tests/engine_smoke.rs` plays a generated clip: frames reach the UI buffer, seek and end work
   - [x] Control bar matches the Player frame (`187:328`) in a snapshot
-  - [ ] Open file/folder/disc/network dialogs open media and switch to the player
+  - [x] Open file/folder/disc/network dialogs open media and switch to the player
   - [ ] Fullscreen, hide UI and picture-in-picture work in the running app
 - **Touches:** `infra/vlc/engine.rs`, `app/mod.rs`, `ui/shell/`
 - **Depends on:** none
-- **Notes:** engine, queue logic, shortcuts and control bar are in; dialogs pending.
+- **Notes:** engine, queue logic, shortcuts and control bar are in; Open Disc, Open Capture Device,
+  Open Network Stream and Jump to Time dialogs are in `ui/dialogs/` (MRLs in `domain::disc`).
 
 ### M2: Tracks and sync  `[~]`
 
@@ -107,7 +108,8 @@ VLC's login prompts.
 - **Acceptance:**
   - [x] Engine lists discovery services and browses containers (`Helper::services`, `browse`)
   - [x] libvlc login/question/progress dialogs are bridged to events
-  - [ ] Network page and Open Network Stream dialog match `6216:13614`
+  - [ ] Network page and Open Network Stream dialog match `6216:13614` (dialog done: `--dialog open_network`)
+  - [x] VLC's login, question, progress and error prompts are shown and answered (`--vlc-dialog login`)
 - **Touches:** `infra/vlc/helper.rs`, `infra/vlc/dialogs.rs`, `ui/pages/`, `ui/dialogs/`
 - **Depends on:** M1
 
@@ -151,13 +153,16 @@ The eleven-step first-run flow from the Onboarding frames.
 - **Depends on:** M7
 - **Notes:** none
 
-### O2: Convert and stream  `[~]`
+### O2: Convert and stream  `[x]`
 
 VLC's Convert/Save and Stream with profiles (`Profiles` frame).
 
 - **Value:** one of VLC's most used tools beyond playback.
 - **Depends on:** M1
-- **Notes:** engine side done (`Helper::start_job` runs a sout chain with progress events).
+- **Notes:** engine side done (`Helper::start_job` runs a sout chain with progress events). Convert /
+  Save and Stream dialog (`--dialog convert`): current item, picked files or the queue; file, HTTP,
+  RTSP, RTP or UDP destinations; job list with progress and cancel. Chains built and tested in
+  `domain::convert`.
 
 ### O3: Record and snapshot  `[~]`
 
@@ -196,12 +201,16 @@ Manage VLC Lua add-ons (playlist parsers, discovery, metadata) in the user's VLC
 - **Value:** extends what libvlc can open (site parsers).
 - **Depends on:** M7
 
-### O8: Conversion profiles  `[ ]`
+### O8: Conversion profiles  `[x]`
 
 Create and edit Convert profiles (codec, bitrate, container) as in the Profiles frame.
 
 - **Value:** custom output formats.
 - **Depends on:** O2
+- **Notes:** VLC's standard profiles plus an editor (`--dialog convert_profile`), stored under the
+  store key "profiles" (`App::conversion_profiles`). The `Profiles` frame (`6648:20666`) is in fact
+  the app menu's Profile submenu (Movies, Shows, Music, Work), i.e. preference profiles, not
+  conversion profiles; that menu is not built.
 
 ---
 
