@@ -53,12 +53,14 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, res: &mut Resources) {
     let mut area =
         if overlay || !visible { full } else { Rect::from_min_max(full.min, pos2(full.max.x, full.max.y - bar_h)) };
 
-    // Library rail and column on the left.
-    if show_chrome {
+    // Library rail and column on the left, shown together when the user
+    // opens the library from the title bar (the design's player frames show
+    // either both or neither).
+    if show_chrome && st.side_panel {
         let rail = Rect::from_min_size(area.min, vec2(nav::RAIL_WIDTH, area.height()));
         ui.scope_builder(egui::UiBuilder::new().max_rect(rail), |ui| nav::rail(ui, app, st));
         area.min.x += nav::RAIL_WIDTH;
-        if st.side_panel {
+        {
             let col = Rect::from_min_size(area.min, vec2(SIDE_PANEL_WIDTH, area.height()));
             ui.painter().rect_filled(col, 0, p.bg_b1);
             ui.scope_builder(egui::UiBuilder::new().max_rect(col.shrink(20.0)), |ui| pages::side_panel(ui, app, st));
