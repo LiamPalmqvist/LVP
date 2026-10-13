@@ -718,14 +718,12 @@ fn network(app: &App, q: &str, compact: bool) -> PageModel {
         .map(|u| (MediaItem::new(MediaSource::from_user_input(u)), PlayRecord::default()))
         .collect();
     if compact {
-        let n = flat.tiles.len();
         for (i, (item, rec)) in streams.into_iter().enumerate() {
             let mut t = media_tile(&item, rec, i);
             t.subtitle = Some(item.source.mrl());
             flat.tiles.push(t);
             flat.playable.push(item);
         }
-        let _ = n;
         m.sections.push(flat);
     } else {
         // "Streams" first: open a URL, then the recent ones.
@@ -806,4 +804,73 @@ fn recent(app: &App, q: &str, sort: Option<SortOption>) -> PageModel {
     let shape = shape_for(&items);
     m.sections.push(media_section(items, shape, Some("Recent".into())));
     m
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::*;
+    use crate::app::fake::{FakeEngine, FakeProbe};
+    use crate::app::testing::MemStore;
+
+    fn setup() -> (tempfile::TempDir, App, UiState) {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = App::new(Arc::new(FakeEngine::new()), Arc::new(FakeProbe), Arc::new(MemStore::new(dir.path())));
+        let videos = dir.path().join("Videos");
+        let season = videos.join("Shows/S01");
+        std::fs::create_dir_all(season.join("Extras")).unwrap();
+        for n in ["E2.mp4", "E10.mp4", "E1.mp4", "notes.txt", "song.mp3"] {
+            std::fs::write(season.join(n), b"").unwrap();
+        }
+        app.settings.library.video_folders = vec![videos];
+        (dir, app, UiState::default())
+    }
+
+    #[test]
+    fn folder_crumbs_follow_the_library_root() {
+        let (dir, app, _) = setup();
+        let season = dir.path().join("Videos/Shows/S01");
+        let c = folder_crumbs(&app, &season, false);
+        let labels: Vec<_> = c.iter().map(|c| c.0.as_str()).collect();
+        assert_eq!(labels, vec!["Videos", "Shows", "S01"]);
+        assert_eq!(c[0].1, Some(Page::Videos));
+        assert_eq!(c[1].1, Some(Page::Folder(dir.path().join("Videos/Shows"))));
+        assert_eq!(c[2].1, None);
+    }
+
+    #[test]
+    fn folder_lists_subfolders_then_videos_in_natural_order() {
+        let (dir, mut app, mut st) = setup();
+        let season = dir.path().join("Videos/Shows/S01");
+        let m = folder(&mut app, &mut st, &season, "", None, false);
+        let sec = m.main().unwrap();
+        let titles: Vec<_> = sec.tiles.iter().map(|t| t.title.as_str()).collect();
+        assert_eq!(titles, vec!["Extras", "E1.mp4", "E2.mp4", "E10.mp4"]);
+        assert_eq!(sec.playable.len(), 3);
+        assert_eq!(sec.tiles[2].kind, TileKind::Media(1));
+        assert_eq!(m.count(), 4);
+        let found = folder(&mut app, &mut st, &season, "e10", None, false);
+        assert_eq!(found.count(), 1);
+    }
+
+    #[test]
+    fn videos_root_with_one_folder_shows_its_contents() {
+        let (_dir, mut app, mut st) = setup();
+        let m = root(&mut app, &mut st, "", None, false);
+        assert_eq!(m.crumbs.len(), 1);
+        assert_eq!(m.main().unwrap().tiles[0].title, "Shows");
+        assert!(m.add.is_some());
+    }
+
+    #[test]
+    fn playlists_page_starts_with_create() {
+        let (_dir, mut app, _) = setup();
+        app.library.create_playlist("B list", Vec::new());
+        app.library.create_playlist("A list", vec![MediaItem::file("/x/a.mp4")]);
+        let m = playlists(&app, "", Some(SortOption::TitleAsc));
+        let titles: Vec<_> = m.main().unwrap().tiles.iter().map(|t| t.title.as_str()).collect();
+        assert_eq!(titles, vec!["Create playlist", "A list", "B list"]);
+        assert_eq!(m.count(), 2);
+    }
 }
