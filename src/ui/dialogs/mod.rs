@@ -6,6 +6,7 @@ mod capture;
 mod disc;
 pub mod frame;
 mod jump;
+mod media_info;
 mod network;
 mod vlc;
 
@@ -31,6 +32,7 @@ pub struct DialogsState {
     network: network::NetworkState,
     disc: disc::DiscState,
     capture_state: capture::CaptureState,
+    info: media_info::InfoState,
     /// Items handed to Convert / Save by another dialog.
     convert_source: Option<Vec<MediaItem>>,
 }
@@ -50,6 +52,10 @@ impl DialogsState {
             "onboarding" => &mut self.onboarding,
             "add_subtitles" => &mut self.add_subtitles,
             "new_playlist" => &mut self.new_playlist,
+            "media_info_codec" | "media_info_stats" => {
+                self.info.set_tab(if name.ends_with("codec") { 1 } else { 2 });
+                &mut self.media_info
+            }
             _ => return false,
         };
         *flag = true;
@@ -87,6 +93,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
         capture::show(ctx, app, st);
     }
     let d = &mut st.dialogs;
+    if d.media_info {
+        media_info::show(ctx, app, &mut d.media_info, &mut d.info);
+    }
     if d.jump_to_time {
         jump::show(ctx, app, &mut d.jump_to_time, &mut d.jump);
     }

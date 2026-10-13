@@ -249,6 +249,45 @@ fn main() {
                 _ => DialogRequest::Login { id: 6, title, text, default_username: "liam".into(), ask_store: true },
             });
         }
+        if arg_value(&args, "--dialog").is_some_and(|d| d.starts_with("media_info")) {
+            use notvlc::domain::media::CodecInfo;
+            let mut st = fake.status.lock();
+            st.meta.title = Some("The Wand S01E11".into());
+            st.meta.show_name = Some("The Wand".into());
+            st.meta.season = Some("1".into());
+            st.meta.episode = Some("11".into());
+            st.meta.genre = Some("Fantasy".into());
+            st.meta.date = Some("2024".into());
+            st.meta.encoded_by = Some("Lavf60.16.100".into());
+            st.meta.codecs = vec![
+                CodecInfo {
+                    kind: "Video".into(),
+                    codec: "H264 - MPEG-4 AVC (part 10) (avc1)".into(),
+                    width: Some(1920),
+                    height: Some(1080),
+                    frame_rate: Some(23.976),
+                    bitrate: 4_800_000,
+                    ..Default::default()
+                },
+                CodecInfo {
+                    kind: "Audio".into(),
+                    codec: "MPEG AAC Audio (mp4a)".into(),
+                    language: Some("English".into()),
+                    channels: Some(2),
+                    sample_rate: Some(48000),
+                    bitrate: 192_000,
+                    ..Default::default()
+                },
+            ];
+            st.stats.read_bytes = 182_334_112;
+            st.stats.input_bitrate_kbps = 5120.0;
+            st.stats.demux_bitrate_kbps = 4980.0;
+            st.stats.decoded_video = 3120;
+            st.stats.displayed_pictures = 3118;
+            st.stats.lost_pictures = 2;
+            st.stats.decoded_audio = 6100;
+            st.stats.played_abuffers = 6100;
+        }
         if arg_value(&args, "--dialog").as_deref() == Some("open_network") {
             ui.app.settings.network.recent_urls =
                 vec!["https://www.example.com/live/playlist.m3u8".into(), "rtsp://192.168.1.10:554/stream".into()];
