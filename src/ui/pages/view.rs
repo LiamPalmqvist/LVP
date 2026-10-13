@@ -421,10 +421,10 @@ fn playlist_bar(ui: &mut Ui, app: &mut App, st: &mut UiState, id: u64, m: &PageM
                 % items.len();
             play(app, st, items.clone(), start, name.clone());
         }
-        if widgets::button_with(ui, Some(Icon::Add), "Add Files", ButtonKind::Secondary, vec2(0.0, 32.0)).clicked() {
+        if widgets::button_with(ui, Some(Icon::File), "Add Files", ButtonKind::Secondary, vec2(0.0, 32.0)).clicked() {
             add_files(app, st, id);
         }
-        if widgets::button_with(ui, Some(Icon::Edit), "Rename", ButtonKind::Ghost, vec2(0.0, 32.0)).clicked() {
+        if widgets::button_with(ui, None, "Rename", ButtonKind::Ghost, vec2(0.0, 32.0)).clicked() {
             st.library.rename = Some((id, name.clone().unwrap_or_default()));
         }
         if widgets::button_with(ui, Some(Icon::Save), "Export", ButtonKind::Ghost, vec2(0.0, 32.0)).clicked() {

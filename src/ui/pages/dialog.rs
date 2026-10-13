@@ -37,7 +37,7 @@ fn media_exts() -> Vec<&'static str> {
 fn add_chip(ui: &egui::Ui, r: Rect, hovered: bool) {
     let p = pal(ui.ctx());
     ui.painter().rect_filled(r, 5, if hovered { p.bg_a1 } else { p.bg_a5 });
-    widgets::paint_icon(ui, Rect::from_center_size(r.center(), vec2(24.0, 24.0)), Icon::Add, p.fg_a2);
+    super::cards::icon(ui, Rect::from_center_size(r.center(), vec2(24.0, 24.0)), Icon::Add, p.fg_a2);
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
@@ -63,7 +63,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
             ui.set_width(W);
             ui.spacing_mut().item_spacing = vec2(0.0, 0.0);
             // Title bar.
-            let (bar, _) = ui.allocate_exact_size(vec2(W, 50.0), Sense::hover());
+            // Everything is placed absolutely inside one allocation.
+            let (full, _) = ui.allocate_exact_size(vec2(W, 589.0), Sense::hover());
+            let bar = Rect::from_min_size(full.min, vec2(W, 50.0));
             ui.painter().rect_filled(bar, egui::CornerRadius { nw: 14, ne: 14, sw: 0, se: 0 }, p.bg_b2);
             ui.painter().text(
                 pos2(bar.min.x + 19.0, bar.center().y),
@@ -82,7 +84,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                 close = true;
             }
 
-            let body = ui.allocate_exact_size(vec2(W, 467.0), Sense::hover()).0;
+            let body = Rect::from_min_size(full.min + vec2(0.0, 50.0), vec2(W, 467.0));
             let x0 = body.min.x + 20.0;
             let mut y = body.min.y + 22.0;
             ui.painter().text(pos2(x0, y + 14.0), Align2::LEFT_CENTER, "Playlist Details", font::regular(16.0), p.fg2);
@@ -97,7 +99,8 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
             let field = Rect::from_min_size(pos2(x0, y + 80.0), vec2(541.0, 37.0));
             ui.painter().rect_filled(field, 6, p.bg_b2);
             ui.painter().rect_stroke(field, 6, Stroke::new(2.0, p.bg_a4), StrokeKind::Inside);
-            ui.scope_builder(egui::UiBuilder::new().max_rect(field.shrink2(vec2(12.0, 9.0))), |ui| {
+            {
+                let ui = &mut ui.new_child(egui::UiBuilder::new().max_rect(field.shrink2(vec2(12.0, 9.0))));
                 let r = ui.add(
                     egui::TextEdit::singleline(&mut np.name)
                         .hint_text(egui::RichText::new("e.g., Favorite Videos").color(p.fg_a4))
@@ -112,7 +115,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                 if np.name.is_empty() && !r.has_focus() && ui.memory(|m| m.focused().is_none()) {
                     r.request_focus();
                 }
-            });
+            }
             // Cover picker.
             let cover = Rect::from_min_size(pos2(body.max.x - 20.0 - 112.0, y + 7.0), vec2(112.0, 112.0));
             let cresp = ui.interact(cover, ui.id().with("np-cover"), Sense::click());
@@ -168,7 +171,8 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                 }
             } else {
                 let inner = dropbox.shrink2(vec2(12.0, 8.0));
-                ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
+                {
+                    let ui = &mut ui.new_child(egui::UiBuilder::new().max_rect(inner));
                     egui::ScrollArea::vertical().id_salt("np-files").max_height(inner.height() - 38.0).show(ui, |ui| {
                         let mut remove = None;
                         let names: Vec<String> =
@@ -220,11 +224,11 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                     if resp.on_hover_text("Add more files").clicked() {
                         pick_files(np);
                     }
-                });
+                }
             }
 
             // Footer.
-            let (foot, _) = ui.allocate_exact_size(vec2(W, 72.0), Sense::hover());
+            let foot = Rect::from_min_size(full.min + vec2(0.0, 517.0), vec2(W, 72.0));
             let cancel = Rect::from_min_size(pos2(foot.min.x + 20.0, foot.min.y + 20.0), vec2(100.0, 32.0));
             let cr = ui.interact(cancel, ui.id().with("np-cancel"), Sense::click());
             ui.painter().rect_filled(cancel, 6, if cr.hovered() { p.bg_a1 } else { p.bg_a3 });

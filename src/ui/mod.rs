@@ -133,6 +133,10 @@ impl NotVlcApp {
     }
 
     fn handle_drops(&mut self, ctx: &egui::Context) {
+        // The New Playlist dialog takes dropped files itself.
+        if self.st.dialogs.new_playlist {
+            return;
+        }
         let dropped: Vec<PathBuf> = ctx.input(|i| i.raw.dropped_files.iter().filter_map(|f| f.path.clone()).collect());
         if dropped.is_empty() {
             let hovering = ctx.input(|i| !i.raw.hovered_files.is_empty());
