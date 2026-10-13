@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 
-use crossbeam_channel::{Receiver, unbounded};
+use crossbeam_channel::Sender;
 
 fn socket(data_dir: &Path) -> PathBuf {
     data_dir.join("instance.sock")
@@ -24,13 +24,12 @@ pub fn forward(data_dir: &Path, paths: &[PathBuf]) -> bool {
     stream.write_all(msg.as_bytes()).is_ok()
 }
 
-/// Listens for other launches. Each message is the list of paths they were
-/// given (possibly empty).
-pub fn listen(data_dir: &Path) -> Option<Receiver<Vec<PathBuf>>> {
+/// Listens for other launches and sends the paths each one was given
+/// (possibly none) to `tx`.
+pub fn listen(data_dir: &Path, tx: Sender<Vec<PathBuf>>) -> Option<()> {
     let path = socket(data_dir);
     let _ = std::fs::remove_file(&path);
     let listener = UnixListener::bind(&path).ok()?;
-    let (tx, rx) = unbounded();
     std::thread::Builder::new()
         .name("single-instance".into())
         .spawn(move || {
@@ -48,7 +47,7 @@ pub fn listen(data_dir: &Path) -> Option<Receiver<Vec<PathBuf>>> {
             }
         })
         .ok()?;
-    Some(rx)
+    Some(())
 }
 
 #[cfg(test)]
@@ -59,7 +58,8 @@ mod tests {
     fn second_launch_forwards_paths() {
         let dir = tempfile::tempdir().unwrap();
         assert!(!forward(dir.path(), &[PathBuf::from("/a.mkv")]));
-        let rx = listen(dir.path()).unwrap();
+        let (tx, rx) = crossbeam_channel::unbounded();
+        listen(dir.path(), tx).unwrap();
         assert!(forward(dir.path(), &[PathBuf::from("/a.mkv"), PathBuf::from("/b c.mp3")]));
         let got = rx.recv_timeout(std::time::Duration::from_secs(2)).unwrap();
         assert_eq!(got, vec![PathBuf::from("/a.mkv"), PathBuf::from("/b c.mp3")]);
