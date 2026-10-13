@@ -61,9 +61,25 @@ pub fn placeholder(ui: &Ui, rect: Rect, radius: u8, p: &Palette) {
 
 // ---- blurred backdrop ----------------------------------------------------------
 
+/// A blurred copy of some cover art and its mean brightness (0 to 1).
+#[derive(Clone)]
+pub struct Backdrop {
+    pub texture: TextureHandle,
+    pub brightness: f32,
+}
+
+impl Backdrop {
+    /// The tint that brings the backdrop to about `target` brightness without
+    /// ever brightening it: dark covers show as they are (as in the design),
+    /// bright ones are dimmed so the title stays readable.
+    pub fn tint_for(&self, target: f32) -> f32 {
+        (target / self.brightness.max(1e-3)).clamp(0.3, 1.0)
+    }
+}
+
 enum Slot {
     Loading,
-    Ready(TextureHandle),
+    Ready(Backdrop),
     Failed,
 }
 
@@ -77,20 +93,26 @@ fn blur_cache(ctx: &Context) -> BlurCache {
 /// the design's 20pt layer blur on a window-sized image.
 const BLUR_SIDE: u32 = 160;
 
-fn blurred_image(path: &Path) -> Option<egui::ColorImage> {
+fn blurred_image(path: &Path) -> Option<(egui::ColorImage, f32)> {
     let img = image::open(path).ok()?;
     let small = img.resize_to_fill(BLUR_SIDE, BLUR_SIDE, image::imageops::FilterType::Triangle).to_rgba8();
     let soft = image::imageops::blur(&small, 1.6);
+    let n = (soft.width() * soft.height()).max(1) as f32;
+    let lum: f32 = soft
+        .pixels()
+        .map(|p| (0.2126 * p[0] as f32 + 0.7152 * p[1] as f32 + 0.0722 * p[2] as f32) / 255.0)
+        .sum::<f32>()
+        / n;
     let size = [soft.width() as usize, soft.height() as usize];
-    Some(egui::ColorImage::from_rgba_unmultiplied(size, soft.as_raw()))
+    Some((egui::ColorImage::from_rgba_unmultiplied(size, soft.as_raw()), lum))
 }
 
 /// A blurred copy of the art at `path`, made on a background thread.
-pub fn blurred(ctx: &Context, path: &Path) -> Option<TextureHandle> {
+pub fn blurred(ctx: &Context, path: &Path) -> Option<Backdrop> {
     let cache = blur_cache(ctx);
     let mut map = cache.lock();
     match map.get(path) {
-        Some(Slot::Ready(t)) => return Some(t.clone()),
+        Some(Slot::Ready(b)) => return Some(b.clone()),
         Some(_) => return None,
         None => {}
     }
@@ -102,9 +124,10 @@ pub fn blurred(ctx: &Context, path: &Path) -> Option<TextureHandle> {
     let (ctx2, path2, cache2) = (ctx.clone(), path.to_path_buf(), cache.clone());
     let spawned = std::thread::Builder::new().name("music-blur".into()).spawn(move || {
         let slot = match blurred_image(&path2) {
-            Some(img) => {
-                Slot::Ready(ctx2.load_texture(format!("blur:{}", path2.display()), img, TextureOptions::LINEAR))
-            }
+            Some((img, brightness)) => Slot::Ready(Backdrop {
+                texture: ctx2.load_texture(format!("blur:{}", path2.display()), img, TextureOptions::LINEAR),
+                brightness,
+            }),
             None => Slot::Failed,
         };
         cache2.lock().insert(path2, slot);

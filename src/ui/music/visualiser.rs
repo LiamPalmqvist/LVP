@@ -82,12 +82,13 @@ pub fn show(
     if playing {
         v.phase += dt as f64 * app.status.rate.clamp(0.25, 4.0) as f64;
     }
-    let half = ((area.width() / 2.0) / PITCH).floor().max(1.0) as usize;
+    let cx = art.center().x;
+    let half_w = (cx - area.min.x).max(area.max.x - cx);
+    let half = (half_w / PITCH).floor().max(1.0) as usize;
     v.levels.resize(half, 0.0);
     let energy = energy.map(|e| 0.35 + 0.65 * e.clamp(0.0, 1.0)).unwrap_or(0.85);
     let max_h = (art.height() * 0.42).max(12.0);
     let cy = art.center().y;
-    let cx = area.center().x;
     // Fast attack, slower release, independent of the frame rate.
     let (attack, release) = (1.0 - (-dt * 18.0).exp(), 1.0 - (-dt * 6.0).exp());
     let hidden = art.expand(2.0);

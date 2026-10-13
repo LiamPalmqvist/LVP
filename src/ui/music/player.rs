@@ -26,7 +26,9 @@ pub struct Layout {
 }
 
 /// Design: 73pt margin, 738pt art, 74pt gap, 29pt title, 73pt margin.
-pub fn layout(rect: Rect) -> Layout {
+/// The art is centred on `centre_x` (the window's centre in the design, also
+/// with the library column open) as far as the area allows.
+pub fn layout(rect: Rect, centre_x: f32) -> Layout {
     let k = (rect.height() / DESIGN_AREA_H).min(1.4);
     let margin = (73.0 * k).max(12.0);
     let gap = (74.0 * k).clamp(10.0, 74.0);
@@ -36,7 +38,10 @@ pub fn layout(rect: Rect) -> Layout {
     let side = (rect.height() - 2.0 * margin - gap - title_h).min(rect.width() - 2.0 * side_margin).max(32.0);
     let block = side + gap + title_h;
     let top = rect.center().y - block / 2.0;
-    let art = Rect::from_min_size(pos2(rect.center().x - side / 2.0, top), vec2(side, side));
+    let lo = rect.min.x + side_margin + side / 2.0;
+    let hi = rect.max.x - side_margin - side / 2.0;
+    let cx = if lo <= hi { centre_x.clamp(lo, hi) } else { rect.center().x };
+    let art = Rect::from_min_size(pos2(cx - side / 2.0, top), vec2(side, side));
     Layout { art, title_top: art.max.y + gap, font_size, radius: (20.0 * k).clamp(8.0, 20.0) as u8, scale: k }
 }
 
@@ -48,19 +53,23 @@ pub fn show_player(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState) {
     let painter = ui.painter_at(rect);
     painter.rect_filled(rect, 0, p.bg_a3);
 
-    // Backdrop: the art again, covering the area, blurred and darkened.
-    if let Some(tex) = cover.as_deref().and_then(|c| art::blurred(ui.ctx(), c)) {
-        let side = rect.width().max(rect.height()) + 32.0;
-        let bg = Rect::from_center_size(rect.center(), vec2(side, side));
-        let tint = if p.dark { Color32::from_gray(96) } else { Color32::WHITE };
+    let l = layout(rect, ui.ctx().content_rect().center().x);
+
+    // Backdrop: the art again, centred behind it and covering the area,
+    // blurred and dimmed.
+    if let Some(bd) = cover.as_deref().and_then(|c| art::blurred(ui.ctx(), c)) {
+        let cx = l.art.center().x;
+        let half_w = (cx - rect.min.x).max(rect.max.x - cx);
+        let side = (2.0 * half_w).max(rect.height()) + 32.0;
+        let bg = Rect::from_center_size(pos2(cx, rect.center().y), vec2(side, side));
+        let tint = if p.dark { Color32::from_gray((bd.tint_for(0.16) * 255.0) as u8) } else { Color32::WHITE };
         let full = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
-        art::paint_texture(&painter, bg, tex.id(), full, CornerRadius::ZERO, tint);
+        art::paint_texture(&painter, bg, bd.texture.id(), full, CornerRadius::ZERO, tint);
         if !p.dark {
             painter.rect_filled(rect, 0, with_alpha(p.bg_b1, 0.74));
         }
     }
 
-    let l = layout(rect);
     let waveform = app.waveform(&item.source);
     let energy = waveform.as_deref().map(|w| energy_at(w, progress(app)));
     visualiser::show(ui, &painter, rect, l.art, app, &mut st.music.visualiser, energy, &p);
@@ -82,7 +91,7 @@ pub fn show_player(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState) {
     let color = if p.dark { Color32::WHITE } else { p.fg1 };
     widgets::text_clipped(
         ui,
-        pos2(rect.center().x, l.title_top),
+        pos2(l.art.center().x, l.title_top),
         Align2::CENTER_TOP,
         &title,
         font::medium(l.font_size),
@@ -116,8 +125,9 @@ mod tests {
     fn layout_matches_the_design_at_1080p() {
         // The player area of the design frame: below the title bar, above the controls.
         let area = Rect::from_min_size(pos2(0.0, 40.0), vec2(1920.0, 986.0));
-        let l = layout(area);
+        let l = layout(area, 960.0);
         assert!((l.art.width() - 738.0).abs() < 2.0, "{:?}", l.art);
+        assert!((l.art.min.x - 591.0).abs() < 2.0, "{:?}", l.art);
         assert!((l.art.min.y - 113.0).abs() < 2.0, "{:?}", l.art);
         assert!((l.title_top - 924.0).abs() < 2.0, "{}", l.title_top);
         assert_eq!(l.radius, 20);
@@ -126,10 +136,21 @@ mod tests {
     #[test]
     fn layout_fits_picture_in_picture() {
         let area = Rect::from_min_size(pos2(0.0, 0.0), vec2(480.0, 300.0));
-        let l = layout(area);
+        let l = layout(area, 240.0);
         assert!(area.contains_rect(l.art));
         assert!(l.title_top + l.font_size < area.max.y);
         assert!(l.font_size >= 13.0);
+    }
+
+    #[test]
+    fn layout_stays_centred_on_the_window_beside_the_library_column() {
+        // Rail (50) and library column (377) on the left, as in 4778:25123.
+        let area = Rect::from_min_max(pos2(427.0, 40.0), pos2(1920.0, 1026.0));
+        let l = layout(area, 960.0);
+        assert!((l.art.min.x - 591.0).abs() < 2.0, "{:?}", l.art);
+        // A narrow area pulls the art inside it.
+        let narrow = Rect::from_min_max(pos2(1000.0, 40.0), pos2(1920.0, 1026.0));
+        assert!(narrow.contains_rect(layout(narrow, 960.0).art));
     }
 
     #[test]
