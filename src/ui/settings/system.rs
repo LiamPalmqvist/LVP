@@ -21,10 +21,13 @@ pub fn network(f: &mut Form, s: &mut Settings, _cx: &mut Cx) {
         n.network_caching_ms = net;
         n.live_caching_ms = live;
     }
+    // The four amounts follow the preset (drawn dimmed) until edited.
+    f.dim = [n.file_caching_ms, n.disc_caching_ms, n.network_caching_ms, n.live_caching_ms] == n.buffering.caching_ms();
     f.int("Local files", None, &mut n.file_caching_ms, 0..=60_000, "ms");
     f.int("Discs", None, &mut n.disc_caching_ms, 0..=60_000, "ms");
     f.int("Network streams", None, &mut n.network_caching_ms, 0..=60_000, "ms");
     f.int("Live capture", None, &mut n.live_caching_ms, 0..=60_000, "ms");
+    f.dim = false;
 
     f.section("Proxy");
     f.text(

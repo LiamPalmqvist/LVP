@@ -22,7 +22,7 @@ pub const CONTROL_W: f32 = 320.0;
 /// Row heights from the design: 32pt controls, 36pt fields, labelled sliders.
 pub const ROW_TOGGLE: f32 = 42.0;
 pub const ROW_FIELD: f32 = 46.0;
-pub const ROW_SLIDER: f32 = 57.0;
+pub const ROW_SLIDER: f32 = 62.0;
 pub const ROW_NUMBER: f32 = 48.0;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -41,11 +41,24 @@ pub struct Form<'u> {
     first: bool,
     /// The page's "Advanced Options" are expanded.
     pub advanced: bool,
+    /// Draw row labels dimmed (values that follow another setting).
+    pub dim: bool,
+    /// Rows depend on an option that is off: dimmed and not editable.
+    pub disabled: bool,
 }
 
 impl<'u> Form<'u> {
     pub fn new(ui: &'u mut Ui, mode: Mode, query: &str, advanced: bool) -> Self {
-        Self { ui, mode, query: query.trim().to_lowercase(), hits: 0, first: true, advanced }
+        Self {
+            ui,
+            mode,
+            query: query.trim().to_lowercase(),
+            hits: 0,
+            first: true,
+            advanced,
+            dim: false,
+            disabled: false,
+        }
     }
 
     pub fn searching(&self) -> bool {
@@ -93,7 +106,13 @@ impl<'u> Form<'u> {
             return None;
         }
         self.first = false;
-        Some(row_ui(self.ui, label, info, height, control))
+        let disabled = self.disabled;
+        Some(row_ui_styled(self.ui, label, info, height, self.dim || disabled, |ui| {
+            if disabled {
+                ui.disable();
+            }
+            control(ui)
+        }))
     }
 
     /// Free-form content that is listed in search results when `keywords`
@@ -244,12 +263,24 @@ pub fn heading(ui: &mut Ui, title: &str) {
 
 /// Draws one settings row into a fresh full-width rect.
 pub fn row_ui<R>(ui: &mut Ui, label: &str, info: Option<&str>, height: f32, control: impl FnOnce(&mut Ui) -> R) -> R {
+    row_ui_styled(ui, label, info, height, false, control)
+}
+
+fn row_ui_styled<R>(
+    ui: &mut Ui,
+    label: &str,
+    info: Option<&str>,
+    height: f32,
+    dim: bool,
+    control: impl FnOnce(&mut Ui) -> R,
+) -> R {
     let p = pal(ui.ctx());
     let w = ui.available_width();
     let (rect, _) = ui.allocate_exact_size(vec2(w, height), Sense::hover());
-    let galley = ui.painter().layout_no_wrap(label.to_string(), font::regular(14.0), p.fg_a2);
+    let col = if dim { p.fg_a4 } else { p.fg_a2 };
+    let galley = ui.painter().layout_no_wrap(label.to_string(), font::regular(14.0), col);
     let lw = galley.size().x;
-    ui.painter().galley(pos2(rect.min.x, rect.center().y - galley.size().y / 2.0), galley, p.fg_a2);
+    ui.painter().galley(pos2(rect.min.x, rect.center().y - galley.size().y / 2.0), galley, col);
     if let Some(text) = info {
         let ir = Rect::from_min_size(pos2(rect.min.x + lw + 10.0, rect.center().y - 9.0), Vec2::splat(18.0));
         let id = ui.id().with(("info", label, rect.min.y as i32));

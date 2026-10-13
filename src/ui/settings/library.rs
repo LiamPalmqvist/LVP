@@ -19,6 +19,7 @@ pub fn library(f: &mut Form, s: &mut Settings, _cx: &mut Cx) {
         Some("Opening a file while the app runs plays it in the open window instead of starting a second one."),
         &mut l.one_instance,
     );
+    f.disabled = !l.one_instance;
     f.toggle(
         "Apply to files opened from the file manager",
         Some("Use the single window for files opened from Finder too."),
@@ -29,6 +30,7 @@ pub fn library(f: &mut Form, s: &mut Settings, _cx: &mut Cx) {
         Some("Files opened from outside are queued after what is playing."),
         &mut l.enqueue,
     );
+    f.disabled = false;
     f.choice(
         "When opening a folder",
         Some("Whether files in subfolders are played too."),
