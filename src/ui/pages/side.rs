@@ -5,7 +5,6 @@
 use egui::{Align2, Rect, Sense, Stroke, Ui, pos2, vec2};
 
 use crate::app::App;
-use crate::domain::library::ViewMode;
 use crate::ui::icons::Icon;
 use crate::ui::state::{UiState, View};
 use crate::ui::theme::font;
@@ -45,8 +44,8 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
     }
     ui.ctx().data_mut(|d| d.insert_temp(search_id, search_open));
     let vr = sr.translate(vec2(-36.0, 0.0));
-    let icon = if st.library.view == ViewMode::Grid { Icon::Grid } else { Icon::List };
-    let vresp = icon_at(ui, vr, icon, true, false, "View options");
+    // The column is always a list; the popup sets the library view's mode.
+    let vresp = icon_at(ui, vr, Icon::List, true, false, "View options");
     header::view_popup(&vresp, st);
     if m.sortable {
         let srt = vr.translate(vec2(-36.0, 0.0));
@@ -80,8 +79,9 @@ fn rows(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
         return;
     }
     egui::ScrollArea::vertical().id_salt("side-rows").auto_shrink(false).show(ui, |ui| {
+        ui.spacing_mut().item_spacing.y = 0.0;
         let w = ui.available_width();
-        ui.add_space(20.0);
+        ui.add_space(18.0);
         let has_action = m.sections.iter().flat_map(|s| &s.tiles).any(|t| matches!(t.kind, TileKind::Action(_)));
         if let Some((label, act)) = m.add
             && !has_action
@@ -91,7 +91,7 @@ fn rows(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
             if resp.hovered() {
                 ui.painter().rect_filled(r.expand2(vec2(4.0, 0.0)), 6, p.hover);
             }
-            widgets::paint_icon(
+            cards::icon(
                 ui,
                 Rect::from_center_size(pos2(r.min.x + 16.0, r.center().y), vec2(24.0, 24.0)),
                 Icon::Add,

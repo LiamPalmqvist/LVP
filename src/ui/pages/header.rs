@@ -34,7 +34,7 @@ pub fn icon_at(ui: &mut Ui, rect: Rect, icon: Icon, enabled: bool, active: bool,
     } else {
         p.fg_a2
     };
-    widgets::paint_icon(ui, rect, icon, fg);
+    super::cards::icon(ui, rect, icon, fg);
     if enabled {
         let r = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
         if tooltip.is_empty() { r } else { r.on_hover_text(tooltip) }

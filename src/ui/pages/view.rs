@@ -282,9 +282,12 @@ fn sections(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
     let p = pal(ui.ctx());
     let home = m.kind == PageKind::Home;
     let pad = bottom_pad(app);
-    egui::ScrollArea::vertical().id_salt("lib-sections").auto_shrink(false).show(ui, |ui| {
+    let list = st.library.view == ViewMode::List && m.viewable;
+    egui::ScrollArea::vertical().id_salt(("lib-sections", list)).auto_shrink(false).show(ui, |ui| {
+        ui.spacing_mut().item_spacing.y = 0.0;
         let width = ui.available_width();
         for (si, sec) in m.sections.iter().enumerate() {
+            // Section frames sit 17pt apart with 20pt padding inside.
             ui.add_space(17.0 + 20.0);
             if let Some(title) = &sec.title {
                 let (r, resp) = ui.allocate_exact_size(vec2(width, 24.0), Sense::click());
@@ -311,28 +314,30 @@ fn sections(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
                 ui.add_space(20.0);
             }
             let subtitle = sec.tiles.iter().any(|t| t.subtitle.is_some());
-            let (w, gap) = match sec.shape {
-                Shape::Wide => (316.0f32, 20.0),
-                Shape::Square => (200.0, 20.0),
+            let (w, h, gap) = if list {
+                let cols = (((width + 10.0) / 416.0).floor()).max(1.0);
+                (((width - 10.0 * (cols - 1.0)) / cols).floor(), 32.0, vec2(10.0, 10.0))
+            } else {
+                let w = if sec.shape == Shape::Wide { 316.0f32 } else { 200.0 };
+                (w, card_h(sec.shape, w, subtitle), vec2(20.0, 40.0))
             };
-            let cols = (((width + gap) / (w + gap)).floor() as usize).max(1);
-            let n = if home { sec.tiles.len().min(cols) } else { sec.tiles.len() };
+            let cols = (((width + gap.x) / (w + gap.x)).floor() as usize).max(1);
+            let n = if home && !list { sec.tiles.len().min(cols) } else { sec.tiles.len() };
             let rows = n.div_ceil(cols);
-            let h = card_h(sec.shape, w, subtitle);
-            let total = rows as f32 * h + rows.saturating_sub(1) as f32 * 40.0;
+            let total = rows as f32 * h + rows.saturating_sub(1) as f32 * gap.y;
             let (rect, _) = ui.allocate_exact_size(vec2(width, total), Sense::hover());
             for ti in 0..n {
                 let (r, c) = (ti / cols, ti % cols);
                 let cell = Rect::from_min_size(
-                    pos2(rect.min.x + c as f32 * (w + gap), rect.min.y + r as f32 * (h + 40.0)),
+                    pos2(rect.min.x + c as f32 * (w + gap.x), rect.min.y + r as f32 * (h + gap.y)),
                     vec2(w, h),
                 );
                 if !ui.is_rect_visible(cell) {
                     continue;
                 }
-                section_tile(ui, app, st, m, sec, si, ti, cell);
+                section_tile(ui, app, st, m, sec, (si, ti), cell, list);
             }
-            ui.add_space(20.0);
+            ui.add_space(40.0);
         }
         ui.add_space(pad);
     });
@@ -345,9 +350,9 @@ fn section_tile(
     st: &mut UiState,
     m: &PageModel,
     sec: &SectionModel,
-    si: usize,
-    ti: usize,
+    (si, ti): (usize, usize),
     cell: Rect,
+    list: bool,
 ) {
     let t = &sec.tiles[ti];
     let resp = ui.interact(cell, ui.id().with(("lib-sec", si, ti)), Sense::click());
@@ -358,7 +363,12 @@ fn section_tile(
     if let Some(item) = item {
         want_meta(app, st, item);
     }
-    let (_, badge) = cards::grid_card(ui, app, cell, sec.shape, t, item, resp.hovered(), false);
+    let badge = if list {
+        cards::list_row(ui, app, cell, t, item, resp.hovered(), false, true);
+        item.map(|_| Rect::from_min_size(cell.min, vec2(32.0, cell.height())))
+    } else {
+        cards::grid_card(ui, app, cell, sec.shape, t, item, resp.hovered(), false).1
+    };
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     let on_badge = badge.is_some_and(|b| ui.input(|i| i.pointer.interact_pos()).is_some_and(|q| b.contains(q)));
     if (resp.clicked() && (item.is_none() || on_badge)) || (resp.double_clicked() && item.is_some()) {

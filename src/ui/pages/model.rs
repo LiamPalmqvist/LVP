@@ -214,7 +214,7 @@ fn make(app: &mut App, st: &mut UiState, key: &Key) -> PageModel {
     let q = key.search.as_str();
     let sort = key.sort;
     match &key.page {
-        Page::Home => home(app, q, key.compact),
+        Page::Home => home(app, q, sort, key.compact),
         Page::Videos => root(app, st, q, sort, false),
         Page::Songs => root(app, st, q, sort, true),
         Page::Folder(p) => folder(app, st, p, q, sort, false),
@@ -225,7 +225,7 @@ fn make(app: &mut App, st: &mut UiState, key: &Key) -> PageModel {
         Page::Network => network(app, q, key.compact),
         Page::Service(name) => super::network::service(app, st, name, q),
         Page::NetFolder { mrl, name } => super::network::folder(app, st, mrl, name, q),
-        Page::Playlists => playlists(app, q),
+        Page::Playlists => playlists(app, q, sort),
         Page::Playlist(id) => playlist(app, *id, q),
         Page::Recent => recent(app, q, sort),
         Page::ContinueWatching => home_list(app, &key.page, q, sort),
@@ -328,21 +328,25 @@ fn shape_for(items: &[(MediaItem, PlayRecord)]) -> Shape {
 
 // ---- Home -----------------------------------------------------------------------
 
-fn home(app: &mut App, q: &str, compact: bool) -> PageModel {
+fn home(app: &mut App, q: &str, sort: Option<SortOption>, compact: bool) -> PageModel {
+    let sorted = |mut v: Vec<(MediaItem, PlayRecord)>| {
+        if let Some(o) = sort {
+            sort_items(&mut v, o);
+        }
+        v
+    };
     let mut m = PageModel::new(PageKind::Home, vec![crumb("Home", Some(Page::Home))]);
-    m.sortable = false;
-    m.viewable = false;
     m.empty = ("Welcome to NotVLC", "Things you play show up here. Open a file or browse Videos and Music.");
     let n = if compact { 3 } else { 24 };
 
-    let cw: Vec<_> = app.library.continue_watching(n).into_iter().filter(|(i, _)| keep(i, q)).collect();
+    let cw = sorted(app.library.continue_watching(n).into_iter().filter(|(i, _)| keep(i, q)).collect());
     if !cw.is_empty() {
         let mut s = media_section(cw, Shape::Wide, Some("Continue Watching".into()));
         s.title = Some("Continue Watching".into());
         s.link = Some(Page::ContinueWatching);
         m.sections.push(s);
     }
-    let la: Vec<_> = app.library.listen_again(n).into_iter().filter(|(i, _)| keep(i, q)).collect();
+    let la = sorted(app.library.listen_again(n).into_iter().filter(|(i, _)| keep(i, q)).collect());
     if !la.is_empty() {
         let mut s = media_section(la, Shape::Square, Some("Listen Again".into()));
         s.title = Some("Listen Again".into());
@@ -377,7 +381,7 @@ fn home(app: &mut App, q: &str, compact: bool) -> PageModel {
         s.tiles = lists;
         m.sections.push(s);
     }
-    let favs: Vec<_> = favorites(app).into_iter().filter(|(i, _)| keep(i, q)).take(n).collect();
+    let favs = sorted(favorites(app).into_iter().filter(|(i, _)| keep(i, q)).take(n).collect());
     if !favs.is_empty() {
         let shape = shape_for(&favs);
         let mut s = media_section(favs, shape, Some("Favorites".into()));
@@ -740,13 +744,21 @@ fn network(app: &App, q: &str, compact: bool) -> PageModel {
 
 // ---- Playlists -------------------------------------------------------------------------
 
-fn playlists(app: &App, q: &str) -> PageModel {
+fn playlists(app: &App, q: &str, sort: Option<SortOption>) -> PageModel {
     let mut m = PageModel::new(PageKind::Playlists, vec![crumb("Playlists", Some(Page::Playlists))]);
-    m.sortable = false;
     m.add = Some(("Create playlist", Act::CreatePlaylist));
     let mut s = section(Shape::Square);
     s.tiles.push(action_tile("Create playlist", Icon::Add, Act::CreatePlaylist));
-    for pl in app.library.playlists().iter().filter(|pl| keep_text(&pl.name, q)) {
+    let mut lists: Vec<&crate::domain::playlist::Playlist> =
+        app.library.playlists().iter().filter(|pl| keep_text(&pl.name, q)).collect();
+    match sort {
+        Some(SortOption::TitleAsc) => lists.sort_by(|a, b| crate::domain::library::natural_cmp(&a.name, &b.name)),
+        Some(SortOption::TitleDesc) => lists.sort_by(|a, b| crate::domain::library::natural_cmp(&b.name, &a.name)),
+        Some(SortOption::NewestFirst) => lists.sort_by(|a, b| b.created.cmp(&a.created)),
+        Some(SortOption::OldestFirst) => lists.sort_by(|a, b| a.created.cmp(&b.created)),
+        _ => {}
+    }
+    for pl in lists {
         let mut t = nav_tile(pl.name.clone(), Icon::Playlist, Page::Playlist(pl.id));
         t.subtitle = Some(items_label(pl.items.len()));
         t.cover = pl.items.first().cloned();

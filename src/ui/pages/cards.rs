@@ -15,6 +15,28 @@ use crate::ui::widgets::{self, pal};
 
 use super::model::{Shape, Tile, TileKind};
 
+/// Paints an icon; the design's "grid" icon has no paths in the export, so
+/// its four rounded squares are drawn here.
+pub fn icon(ui: &Ui, rect: Rect, icon: Icon, color: Color32) {
+    let k = rect.width() / 24.0;
+    if icon == Icon::Add {
+        // The exported "add" strokes are black (an override), so draw the plus.
+        let c = rect.center();
+        let s = Stroke::new(1.5 * k, color);
+        ui.painter().line_segment([c - vec2(7.0 * k, 0.0), c + vec2(7.0 * k, 0.0)], s);
+        ui.painter().line_segment([c - vec2(0.0, 7.0 * k), c + vec2(0.0, 7.0 * k)], s);
+        return;
+    }
+    if icon != Icon::Grid {
+        widgets::paint_icon(ui, rect, icon, color);
+        return;
+    }
+    for (x, y) in [(1.0, 3.0), (13.0, 3.0), (1.0, 13.0), (13.0, 13.0)] {
+        let r = Rect::from_min_size(rect.min + vec2(x, y) * k, vec2(10.0, 8.0) * k).shrink(0.75 * k);
+        ui.painter().rect_stroke(r, 2.0 * k, Stroke::new(1.5 * k, color), StrokeKind::Middle);
+    }
+}
+
 /// Thumbnail height for a 16:9 card of width `w` (316x178 in the design).
 pub fn wide_h(w: f32) -> f32 {
     (w * 178.0 / 316.0).round()
@@ -117,7 +139,7 @@ pub fn picture(
     {
         return true;
     }
-    widgets::paint_icon(ui, Rect::from_center_size(rect.center(), vec2(icon_size, icon_size)), icon, p.fg_a2);
+    self::icon(ui, Rect::from_center_size(rect.center(), vec2(icon_size, icon_size)), icon, p.fg_a2);
     false
 }
 
@@ -243,7 +265,7 @@ pub fn list_row(
     }
     let boxr = Rect::from_min_size(row.min + vec2(0.0, (row.height() - 32.0) / 2.0), vec2(32.0, 32.0));
     let is_media = matches!(tile.kind, TileKind::Media(_));
-    if is_media || tile.cover.is_some() {
+    if is_media {
         let th = Rect::from_center_size(boxr.center(), vec2(24.0, 24.0));
         let pic = tile_picture(app, tile, item);
         let drawn = picture(ui, th, pic.as_ref(), tile.icon, 16.0, 2, p.bg_a1);
@@ -257,7 +279,7 @@ pub fn list_row(
             widgets::paint_icon(ui, Rect::from_center_size(th.center(), vec2(16.0, 16.0)), Icon::Play, p.fg1);
         }
     } else {
-        widgets::paint_icon(ui, Rect::from_center_size(boxr.center(), vec2(24.0, 24.0)), tile.icon, p.fg_a2);
+        icon(ui, Rect::from_center_size(boxr.center(), vec2(24.0, 24.0)), tile.icon, p.fg_a2);
     }
     let mut right = row.max.x;
     if show_duration

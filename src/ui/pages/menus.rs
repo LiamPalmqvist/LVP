@@ -41,7 +41,7 @@ pub fn row(ui: &mut Ui, icon: Option<Icon>, label: &str, selected: bool, chevron
     let fg = if resp.hovered() { p.fg1 } else { p.fg_a2 };
     let mut x = rect.min.x + 14.0;
     if let Some(i) = icon {
-        widgets::paint_icon(ui, Rect::from_min_size(pos2(x, rect.center().y - 12.0), vec2(24.0, 24.0)), i, fg);
+        super::cards::icon(ui, Rect::from_min_size(pos2(x, rect.center().y - 12.0), vec2(24.0, 24.0)), i, fg);
         x += 34.0;
     }
     widgets::text_clipped(
