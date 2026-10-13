@@ -481,7 +481,8 @@ pub fn keyboard(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
         )
     });
     if back {
-        st.go_back();
+        let up = m.crumbs.iter().rev().skip(1).find_map(|c| c.1.clone()).filter(|p| *p != st.page);
+        super::header::go_back_or_up(st, up);
         return;
     }
     let Some(sec) = m.main().filter(|s| s.title.is_none()) else { return };

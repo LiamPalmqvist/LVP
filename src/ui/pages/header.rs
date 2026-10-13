@@ -44,16 +44,26 @@ pub fn icon_at(ui: &mut Ui, rect: Rect, icon: Icon, enabled: bool, active: bool,
 }
 
 /// Back and forward arrows (24pt, 12 apart); returns their combined width.
-pub fn nav_arrows(ui: &mut Ui, st: &mut UiState, x: f32, cy: f32) -> f32 {
+/// With no history, Back goes up to the parent breadcrumb.
+pub fn nav_arrows(ui: &mut Ui, st: &mut UiState, crumbs: &[(String, Option<Page>)], x: f32, cy: f32) -> f32 {
     let back = Rect::from_min_size(pos2(x, cy - 12.0), vec2(24.0, 24.0));
-    if icon_at(ui, back, Icon::ArrowLeft, !st.back.is_empty(), false, "Back").clicked() {
-        st.go_back();
+    let up = crumbs.iter().rev().skip(1).find_map(|c| c.1.clone()).filter(|p| *p != st.page);
+    if icon_at(ui, back, Icon::ArrowLeft, !st.back.is_empty() || up.is_some(), false, "Back").clicked() {
+        go_back_or_up(st, up);
     }
     let fwd = back.translate(vec2(36.0, 0.0));
     if icon_at(ui, fwd, Icon::ArrowRight, !st.forward.is_empty(), false, "Forward").clicked() {
         st.go_forward();
     }
     60.0
+}
+
+pub fn go_back_or_up(st: &mut UiState, up: Option<Page>) {
+    if !st.back.is_empty() {
+        st.go_back();
+    } else if let Some(p) = up {
+        st.navigate(p);
+    }
 }
 
 /// Breadcrumbs from `x`, at most `max_w` wide, vertically centred on `cy`.
@@ -99,7 +109,7 @@ pub fn crumbs(ui: &mut Ui, st: &mut UiState, crumbs: &[(String, Option<Page>)], 
         let clickable = page.is_some() && !last;
         let resp = ui.interact(r, ui.id().with(("crumb", i)), if clickable { Sense::click() } else { Sense::hover() });
         let col = if last && n > 1 {
-            p.fg1
+            p.fg_a2
         } else if clickable && resp.hovered() {
             p.fg2
         } else {
@@ -120,7 +130,7 @@ pub fn crumbs(ui: &mut Ui, st: &mut UiState, crumbs: &[(String, Option<Page>)], 
 pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, rect: Rect, m: &PageModel) {
     let p = pal(ui.ctx());
     let cy = rect.center().y;
-    let arrows = nav_arrows(ui, st, rect.min.x, cy);
+    let arrows = nav_arrows(ui, st, &m.crumbs, rect.min.x, cy);
 
     // Right-hand controls, laid out from the right edge.
     let mut x = rect.max.x;

@@ -20,7 +20,7 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
     let rect = ui.max_rect();
     // Title row: arrows, breadcrumbs, "..." and pop-out.
     let cy = rect.min.y + 12.0;
-    let arrows = header::nav_arrows(ui, st, rect.min.x, cy);
+    let arrows = header::nav_arrows(ui, st, &m.crumbs, rect.min.x, cy);
     let pop = Rect::from_min_size(pos2(rect.max.x - 24.0, cy - 12.0), vec2(24.0, 24.0));
     if icon_at(ui, pop, Icon::Open, true, false, "Open in the library").clicked() {
         st.view = View::Library;

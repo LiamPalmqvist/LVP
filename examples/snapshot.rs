@@ -17,6 +17,7 @@
 //!   --idle                nothing playing
 //!   --onboarding          show the first-run wizard
 //!   --steps N             frames to run before capturing (default 6)
+//!   --list                library list view; --sort LABEL picks a sort option ("Unwatched First")
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -218,6 +219,14 @@ fn main() {
         st.side_panel = has(&args, "--side-panel");
         if has(&args, "--collapsed") {
             st.sidebar_expanded = false;
+        }
+        // Library pages: --list (list view), --sort LABEL (e.g. "Unwatched First").
+        if has(&args, "--list") {
+            st.library.view = notvlc::domain::library::ViewMode::List;
+        }
+        if let Some(s) = arg_value(&args, "--sort") {
+            st.library.sort =
+                notvlc::domain::browse::SortOption::ALL.iter().copied().find(|o| o.label().eq_ignore_ascii_case(&s));
         }
     }
 
