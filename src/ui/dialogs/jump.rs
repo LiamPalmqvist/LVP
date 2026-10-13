@@ -52,7 +52,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut JumpSt
                 frame::note(ui, "This media cannot be seeked.");
             }
         }
-        Part::Footer => {
+        _ => {
             if frame::cancel(ui) {
                 cancel = true;
             }

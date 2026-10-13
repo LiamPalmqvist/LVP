@@ -288,6 +288,17 @@ fn main() {
             st.stats.decoded_audio = 6100;
             st.stats.played_abuffers = 6100;
         }
+        if let Some(d) = arg_value(&args, "--dialog").filter(|d| d.starts_with("add_subtitles")) {
+            let season = home.join("Videos/Shows/The Wand/S01");
+            for n in 1..=15 {
+                touch(&season.join(format!("Subs/The_Wand_S01E{n:02}.srt")));
+            }
+            touch(&season.join("Subs/The_Wand_S01E11.en.srt"));
+            touch(&season.join("Subs/Bonus_Interview.srt"));
+            if d == "add_subtitles" {
+                ui.st.dialogs.add_subtitles_to_folder(season.clone(), Some(season.join("Subs")));
+            }
+        }
         if arg_value(&args, "--dialog").as_deref() == Some("convert") {
             use notvlc::app::JobState;
             ui.app.jobs.push(JobState {

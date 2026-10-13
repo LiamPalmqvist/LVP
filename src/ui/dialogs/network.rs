@@ -192,7 +192,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                     }
                 });
             }
-            Part::Footer => {
+            _ => {
                 if frame::cancel(ui) {
                     cancel = true;
                 }

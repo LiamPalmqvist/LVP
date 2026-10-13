@@ -9,6 +9,7 @@ pub mod frame;
 mod jump;
 mod media_info;
 mod network;
+mod subtitles;
 mod vlc;
 
 use crate::app::App;
@@ -35,6 +36,7 @@ pub struct DialogsState {
     capture_state: capture::CaptureState,
     info: media_info::InfoState,
     convert_state: convert::ConvertState,
+    subs: subtitles::SubsState,
     /// Items handed to Convert / Save by another dialog.
     convert_source: Option<Vec<MediaItem>>,
 }
@@ -54,6 +56,10 @@ impl DialogsState {
             "onboarding" => &mut self.onboarding,
             "add_subtitles" => &mut self.add_subtitles,
             "new_playlist" => &mut self.new_playlist,
+            "add_subtitles_file" | "add_subtitles_online" => {
+                self.subs.preset_file(name.ends_with("online"));
+                &mut self.add_subtitles
+            }
             "convert_profile" => {
                 self.convert_state.open_editor = true;
                 &mut self.convert
@@ -72,6 +78,13 @@ impl DialogsState {
     pub fn convert_items(&mut self, items: Vec<MediaItem>) {
         self.convert_source = Some(items);
         self.convert = true;
+    }
+
+    /// Opens Add Subtitles on a folder of videos, with subtitles from
+    /// `subs` (the same folder when `None`).
+    pub fn add_subtitles_to_folder(&mut self, videos: std::path::PathBuf, subs: Option<std::path::PathBuf>) {
+        self.subs.preset_folder(videos, subs);
+        self.add_subtitles = true;
     }
 
     /// True when one of this module's dialogs is showing.
@@ -102,6 +115,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
         convert::show(ctx, app, &mut st.dialogs);
     }
     let d = &mut st.dialogs;
+    if d.add_subtitles {
+        subtitles::show(ctx, app, &mut d.add_subtitles, &mut d.subs);
+    }
     if d.media_info {
         media_info::show(ctx, app, &mut d.media_info, &mut d.info);
     }

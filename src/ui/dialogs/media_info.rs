@@ -181,7 +181,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut InfoSt
                 }
             });
         }
-        Part::Footer => {
+        _ => {
             frame::right(ui, |ui| {
                 if frame::btn(ui, "Close", Btn::Accent, true).clicked() {
                     close = true;

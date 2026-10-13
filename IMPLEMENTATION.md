@@ -187,12 +187,17 @@ VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music
 - **Value:** the music view in the design centres on it.
 - **Depends on:** M8
 
-### O6: Batch subtitle matching  `[ ]`
+### O6: Batch subtitle matching  `[x]`
 
 "Add Subtitles to Playlist/Folder": match subtitle files to videos and attach them in bulk.
 
 - **Value:** saves attaching subtitles one file at a time.
 - **Depends on:** M2
+- **Notes:** Add Subtitles dialog (`--dialog add_subtitles`, `add_subtitles_file`,
+  `add_subtitles_online`): to the playing file, a folder of videos (subtitles copied next to each video
+  under its name after confirmation) or the queue (`:sub-file=` options). Matching levels follow VLC's
+  sub-autodetect-fuzzy (`domain::subtitles`). "From OpenSubtitles" explains it is unavailable (VLC uses
+  the VLSub Lua extension, which libvlc cannot run).
 
 ### O7: Extensions  `[ ]`
 

@@ -58,7 +58,7 @@ pub fn show(ctx: &egui::Context, app: &App, open: &mut bool) {
                  VideoLAN are trademarks of VideoLAN; NotVLC is not affiliated with VideoLAN.",
             );
         }
-        Part::Footer => {
+        _ => {
             frame::right(ui, |ui| {
                 if frame::btn(ui, "Close", Btn::Accent, true).clicked() {
                     close = true;

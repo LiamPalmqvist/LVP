@@ -140,8 +140,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut super::DialogsState) {
     let mut close = false;
     let mut cancel_job = None;
     let mut clear_jobs = false;
-    let jobs: Vec<JobRow> =
-        app.jobs.iter().map(|j| (j.id, j.label.clone(), j.progress, j.finished.clone())).collect();
+    let jobs: Vec<JobRow> = app.jobs.iter().map(|j| (j.id, j.label.clone(), j.progress, j.finished.clone())).collect();
     if jobs.iter().any(|j| j.3.is_none()) {
         ctx.request_repaint_after(std::time::Duration::from_millis(400));
     }
@@ -366,7 +365,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut super::DialogsState) {
                 }
             });
         }
-        Part::Footer => {
+        _ => {
             if frame::btn(ui, "Close", Btn::Plain, true).clicked() {
                 close = true;
             }
@@ -510,7 +509,7 @@ fn editor(ctx: &egui::Context, app: &mut App, cs: &mut ConvertState) {
                 ui.add(egui::Label::new(RichText::new(chain).font(font::mono(12.0)).color(p.fg_a3)).wrap());
             });
         }
-        Part::Footer => {
+        _ => {
             if frame::cancel(ui) {
                 cancel = true;
             }

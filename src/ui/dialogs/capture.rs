@@ -109,7 +109,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
                     "TV tuner (DVB) and Video4Linux capture are only available in VLC on Linux and Windows.",
                 );
             }
-            Part::Footer => {
+            _ => {
                 if frame::cancel(ui) {
                     cancel = true;
                 }

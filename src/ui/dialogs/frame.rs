@@ -19,7 +19,13 @@ pub const PAD_TOP: f32 = 22.0;
 pub enum Part {
     Body,
     Footer,
+    /// The row of controls under the title on the black header
+    /// (Add Subtitles); only asked for by [`modal_with_toolbar`].
+    Toolbar,
 }
+
+/// Height of the toolbar row and the gap above it.
+pub const TOOLBAR_H: f32 = 46.0;
 
 /// What happened to the dialog this frame.
 #[derive(Debug, Clone, Copy, Default)]
@@ -37,9 +43,33 @@ pub fn modal(
     title: &str,
     size: Vec2,
     footer: bool,
+    add: impl FnMut(&mut Ui, Part),
+) -> ModalOut {
+    modal_impl(ctx, id, title, size, footer, false, add)
+}
+
+/// [`modal`] with a toolbar row in the header (34pt controls, 9pt margins).
+pub fn modal_with_toolbar(
+    ctx: &egui::Context,
+    id: &str,
+    title: &str,
+    size: Vec2,
+    add: impl FnMut(&mut Ui, Part),
+) -> ModalOut {
+    modal_impl(ctx, id, title, size, true, true, add)
+}
+
+fn modal_impl(
+    ctx: &egui::Context,
+    id: &str,
+    title: &str,
+    size: Vec2,
+    footer: bool,
+    toolbar: bool,
     mut add: impl FnMut(&mut Ui, Part),
 ) -> ModalOut {
     let p = pal(ctx);
+    let header_h = HEADER_H + if toolbar { TOOLBAR_H } else { 0.0 };
     let screen = ctx.content_rect();
     let w = size.x.min(screen.width() - 32.0).max(280.0);
     let h = if size.y > 0.0 { size.y.min(screen.height() - 32.0).max(200.0) } else { 0.0 };
@@ -55,10 +85,20 @@ pub fn modal(
         .show(ctx, |ui| {
             ui.spacing_mut().item_spacing = vec2(10.0, 0.0);
             ui.set_width(w);
-            if header(ui, title, w) {
+            if header(ui, title, w, header_h) {
                 out.close = true;
             }
-            let body_h = if h > 0.0 { h - HEADER_H - if footer { FOOTER_H } else { 0.0 } } else { 0.0 };
+            if toolbar {
+                let r = Rect::from_min_size(
+                    ui.min_rect().min + vec2(9.0, HEADER_H + 3.0),
+                    vec2(w - 18.0, TOOLBAR_H - 12.0),
+                );
+                let mut t =
+                    ui.new_child(egui::UiBuilder::new().max_rect(r).layout(Layout::left_to_right(Align::Center)));
+                t.spacing_mut().item_spacing.x = 10.0;
+                add(&mut t, Part::Toolbar);
+            }
+            let body_h = if h > 0.0 { h - header_h - if footer { FOOTER_H } else { 0.0 } } else { 0.0 };
             let body_rect_min = ui.cursor().min;
             ui.allocate_ui_with_layout(
                 vec2(w, if body_h > 0.0 { body_h } else { 0.0 }),
@@ -107,11 +147,17 @@ pub fn modal(
 }
 
 /// The black title strip with the close button. Returns true when closed.
-fn header(ui: &mut Ui, title: &str, w: f32) -> bool {
+fn header(ui: &mut Ui, title: &str, w: f32, h: f32) -> bool {
     let p = pal(ui.ctx());
-    let (rect, _) = ui.allocate_exact_size(vec2(w, HEADER_H), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(w, h), Sense::hover());
     ui.painter().rect_filled(rect, CornerRadius { nw: 14, ne: 14, sw: 0, se: 0 }, p.bg_b2);
-    ui.painter().text(rect.left_center() + vec2(19.0, 0.0), Align2::LEFT_CENTER, title, font::regular(14.0), p.fg_a2);
+    ui.painter().text(
+        rect.left_top() + vec2(19.0, HEADER_H / 2.0),
+        Align2::LEFT_CENTER,
+        title,
+        font::regular(14.0),
+        p.fg_a2,
+    );
     let close = Rect::from_min_size(rect.right_top() + vec2(-41.0, 9.0), vec2(32.0, 32.0));
     let mut c = ui.new_child(egui::UiBuilder::new().max_rect(close));
     widgets::icon_button_sized(&mut c, Icon::Close, vec2(32.0, 32.0), 24.0, false, "Close").clicked()
@@ -366,4 +412,43 @@ pub fn progress(ui: &mut Ui, fraction: Option<f32>, width: f32) {
             ui.ctx().request_repaint();
         }
     }
+}
+
+/// The design's toolbar dropdown ("target", "origin"): BG/A5, 34pt tall,
+/// radius 6, FG/A1 text and a chevron. Returns the newly chosen index.
+pub fn select(ui: &mut Ui, id: &str, selected: &str, options: &[&str], width: f32) -> Option<usize> {
+    let p = pal(ui.ctx());
+    let (rect, resp) = ui.allocate_exact_size(vec2(width, 34.0), Sense::click());
+    ui.painter().rect_filled(rect, CornerRadius::same(6), if resp.hovered() { p.bg_a3 } else { p.bg_a5 });
+    widgets::text_clipped(
+        ui,
+        rect.left_center() + vec2(12.0, 0.0),
+        Align2::LEFT_CENTER,
+        selected,
+        font::regular(14.0),
+        p.fg_a1,
+        width - 50.0,
+    );
+    widgets::paint_icon(
+        ui,
+        Rect::from_center_size(rect.right_center() - vec2(20.0, 0.0), vec2(24.0, 24.0)),
+        Icon::ChevronDown,
+        p.fg_a2,
+    );
+    let mut chosen = None;
+    egui::Popup::menu(&resp)
+        .id(ui.make_persistent_id(id))
+        .width(width + 10.0)
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClick)
+        .frame(widgets::menu_frame(&p))
+        .show(|ui| {
+            ui.set_min_width(width);
+            for (i, o) in options.iter().enumerate() {
+                if widgets::menu_row(ui, None, o, "", *o == selected).clicked() {
+                    chosen = Some(i);
+                }
+            }
+        });
+    let _ = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+    chosen
 }

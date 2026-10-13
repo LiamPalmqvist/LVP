@@ -32,7 +32,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut LoginState) {
                         ui.add(egui::Label::new(RichText::new(&text).font(font::regular(14.0)).color(p.fg2)).wrap());
                     });
                 }
-                Part::Footer => {
+                _ => {
                     frame::right(ui, |ui| {
                         if frame::btn(ui, "OK", Btn::Accent, true).clicked() {
                             ok = true;
@@ -74,7 +74,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut LoginState) {
                         });
                     }
                 }
-                Part::Footer => {
+                _ => {
                     if frame::cancel(ui) {
                         reply = Some(false);
                     }
@@ -114,7 +114,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut LoginState) {
                         let p = pal(ui.ctx());
                         ui.add(egui::Label::new(RichText::new(&text).font(font::regular(14.0)).color(p.fg2)).wrap());
                     }
-                    Part::Footer => {
+                    _ => {
                         let cancel_label = if cancel.is_empty() { "Cancel" } else { cancel.as_str() };
                         if frame::btn(ui, cancel_label, Btn::Plain, true).clicked() {
                             reply = Some(DialogReply::Dismiss);
@@ -153,7 +153,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut LoginState) {
                     let w = ui.available_width();
                     frame::progress(ui, position, w);
                 }
-                Part::Footer => {
+                _ => {
                     if let Some(c) = &cancel
                         && frame::btn(ui, if c.is_empty() { "Cancel" } else { c }, Btn::Plain, true).clicked()
                     {
