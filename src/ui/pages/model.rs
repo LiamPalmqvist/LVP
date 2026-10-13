@@ -182,7 +182,14 @@ impl Cache {
     }
 }
 
-const MODEL_TTL: Duration = Duration::from_secs(2);
+/// How long a model is reused: discovery changes quickly, folders slowly.
+fn model_ttl(page: &Page) -> Duration {
+    match page {
+        Page::Service(_) => Duration::from_secs(1),
+        Page::Folder(_) | Page::MusicFolder(_) | Page::Videos | Page::Songs => Duration::from_secs(5),
+        _ => Duration::from_secs(2),
+    }
+}
 const LISTING_TTL: Duration = Duration::from_secs(10);
 
 /// The model for the current page, rebuilt when stale.
@@ -194,7 +201,7 @@ pub fn build(app: &mut App, st: &mut UiState, compact: bool) -> Arc<PageModel> {
         compact,
     };
     let lib = &mut st.library;
-    let fresh = lib.cache.built.is_some_and(|t| t.elapsed() < MODEL_TTL)
+    let fresh = lib.cache.built.is_some_and(|t| t.elapsed() < model_ttl(&key.page))
         && lib.cache.key.as_ref() == Some(&key)
         && !super::network::changed(&mut lib.net);
     if fresh && let Some(m) = &lib.cache.model {
