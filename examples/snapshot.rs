@@ -219,6 +219,36 @@ fn main() {
         if has(&args, "--collapsed") {
             st.sidebar_expanded = false;
         }
+
+        // ---- dialogs ----
+        // --vlc-dialog login|question|progress|error   queue one of VLC's prompts
+        if let Some(kind) = arg_value(&args, "--vlc-dialog") {
+            use notvlc::app::ports::DialogRequest;
+            let (title, text) = ("Authentication required".to_string(), "smb://nas/Movies needs a login.".to_string());
+            ui.app.dialogs.push_back(match kind.as_str() {
+                "question" => DialogRequest::Question {
+                    id: 7,
+                    title: "Insecure site".into(),
+                    text: "The certificate of this server could not be verified. Do you want to continue anyway?"
+                        .into(),
+                    cancel: "Cancel".into(),
+                    action1: Some("Accept permanently".into()),
+                    action2: Some("Accept once".into()),
+                },
+                "progress" => DialogRequest::Progress {
+                    id: 8,
+                    title: "Downloading".into(),
+                    text: "Fetching the playlist...".into(),
+                    position: Some(0.42),
+                    cancel: Some("Cancel".into()),
+                },
+                "error" => DialogRequest::Error {
+                    title: "Your input can't be opened".into(),
+                    text: "VLC is unable to open the MRL 'http://example.com/missing.mp4'.".into(),
+                },
+                _ => DialogRequest::Login { id: 6, title, text, default_username: "liam".into(), ask_store: true },
+            });
+        }
     }
 
     for _ in 0..steps {

@@ -1,6 +1,11 @@
 //! Modal dialogs: VLC's own prompts, open network/disc/capture, convert,
 //! media information, jump to time, onboarding and about.
 
+mod about;
+pub mod frame;
+mod jump;
+mod vlc;
+
 use crate::app::App;
 use crate::ui::state::UiState;
 
@@ -17,6 +22,8 @@ pub struct DialogsState {
     pub onboarding: bool,
     pub add_subtitles: bool,
     pub new_playlist: bool,
+    login: vlc::LoginState,
+    jump: jump::JumpState,
 }
 
 impl DialogsState {
@@ -39,14 +46,29 @@ impl DialogsState {
         *flag = true;
         true
     }
+
+    /// True when one of this module's dialogs is showing.
+    pub fn any_open(&self) -> bool {
+        self.about
+            || self.open_network
+            || self.open_disc
+            || self.capture
+            || self.convert
+            || self.media_info
+            || self.jump_to_time
+            || self.onboarding
+            || self.add_subtitles
+    }
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
-    if st.dialogs.about {
-        let mut open = true;
-        egui::Window::new("About").open(&mut open).show(ctx, |ui| {
-            ui.label(format!("NotVLC {} on libvlc {}", env!("CARGO_PKG_VERSION"), app.engine.version()));
-        });
-        st.dialogs.about = open;
+    let d = &mut st.dialogs;
+    if d.jump_to_time {
+        jump::show(ctx, app, &mut d.jump_to_time, &mut d.jump);
     }
+    if d.about {
+        about::show(ctx, app, &mut d.about);
+    }
+    // VLC's prompts go last so they sit above anything the user opened.
+    vlc::show(ctx, app, &mut d.login);
 }
