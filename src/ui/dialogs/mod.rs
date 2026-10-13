@@ -4,6 +4,7 @@
 mod about;
 pub mod frame;
 mod jump;
+mod network;
 mod vlc;
 
 use crate::app::App;
@@ -24,6 +25,7 @@ pub struct DialogsState {
     pub new_playlist: bool,
     login: vlc::LoginState,
     jump: jump::JumpState,
+    network: network::NetworkState,
 }
 
 impl DialogsState {
@@ -62,6 +64,9 @@ impl DialogsState {
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
+    if st.dialogs.open_network {
+        network::show(ctx, app, st);
+    }
     let d = &mut st.dialogs;
     if d.jump_to_time {
         jump::show(ctx, app, &mut d.jump_to_time, &mut d.jump);

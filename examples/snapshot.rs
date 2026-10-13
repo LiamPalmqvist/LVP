@@ -249,6 +249,10 @@ fn main() {
                 _ => DialogRequest::Login { id: 6, title, text, default_username: "liam".into(), ask_store: true },
             });
         }
+        if arg_value(&args, "--dialog").as_deref() == Some("open_network") {
+            ui.app.settings.network.recent_urls =
+                vec!["https://www.example.com/live/playlist.m3u8".into(), "rtsp://192.168.1.10:554/stream".into()];
+        }
     }
 
     for _ in 0..steps {

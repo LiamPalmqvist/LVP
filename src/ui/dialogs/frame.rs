@@ -53,7 +53,7 @@ pub fn modal(
         .backdrop_color(Color32::from_black_alpha(if p.dark { 150 } else { 90 }))
         .frame(frame)
         .show(ctx, |ui| {
-            ui.spacing_mut().item_spacing = vec2(10.0, 10.0);
+            ui.spacing_mut().item_spacing = vec2(10.0, 0.0);
             ui.set_width(w);
             if header(ui, title, w) {
                 out.close = true;
@@ -72,6 +72,7 @@ pub fn modal(
                             bottom: if footer { 0 } else { PAD_TOP as i8 },
                         })
                         .show(ui, |ui| {
+                            ui.spacing_mut().item_spacing = vec2(10.0, 10.0);
                             ui.set_width(w - 2.0 * PAD_X);
                             if body_h > 0.0 {
                                 ui.set_max_height(body_h - PAD_TOP);
@@ -84,7 +85,7 @@ pub fn modal(
                 // Keep the footer pinned to the bottom of a fixed-size dialog.
                 let used = ui.cursor().min.y - body_rect_min.y;
                 if used < body_h {
-                    ui.add_space(body_h - used - ui.spacing().item_spacing.y);
+                    ui.add_space(body_h - used);
                 }
             }
             if footer {
@@ -165,17 +166,29 @@ pub fn right<R>(ui: &mut Ui, add: impl FnOnce(&mut Ui) -> R) -> R {
 pub fn heading(ui: &mut Ui, title: &str, hint: &str) {
     let p = pal(ui.ctx());
     ui.spacing_mut().item_spacing.y = 5.0;
-    ui.label(RichText::new(title).font(font::regular(16.0)).color(p.fg2));
+    let w = ui.available_width();
+    let (r, _) = ui.allocate_exact_size(vec2(w, 28.0), Sense::hover());
+    ui.painter().text(r.left_center(), Align2::LEFT_CENTER, title, font::regular(16.0), p.fg2);
     if !hint.is_empty() {
-        ui.label(RichText::new(hint).font(font::regular(14.0)).color(p.fg_a3));
+        ui.horizontal(|ui| {
+            ui.set_min_height(25.0);
+            ui.add(egui::Label::new(RichText::new(hint).font(font::regular(14.0)).color(p.fg_a3)).wrap());
+        });
     }
     ui.spacing_mut().item_spacing.y = 10.0;
 }
 
 /// Small label above a field (Regular 14, FG/A2).
-pub fn label(ui: &mut Ui, text: &str) {
+pub fn label(ui: &mut Ui, text: &str) -> Response {
     let p = pal(ui.ctx());
-    ui.label(RichText::new(text).font(font::regular(14.0)).color(p.fg_a2));
+    ui.label(RichText::new(text).font(font::regular(14.0)).color(p.fg_a2))
+}
+
+/// A muted caption sized to sit on a row of chips.
+pub fn caption(ui: &mut Ui, text: &str, width: f32) {
+    let p = pal(ui.ctx());
+    let (r, _) = ui.allocate_exact_size(vec2(width, 29.0), Sense::hover());
+    ui.painter().text(r.left_center(), Align2::LEFT_CENTER, text, font::regular(13.0), p.fg_a3);
 }
 
 /// Muted explanatory text (Regular 13, FG/A3), wrapping.
@@ -202,10 +215,33 @@ pub fn field(ui: &mut Ui, text: &mut String, hint: &str, width: f32) -> Response
                 egui::TextEdit::singleline(text)
                     .hint_text(RichText::new(hint).color(p.fg_a4))
                     .frame(false)
+                    .margin(egui::Margin::ZERO)
                     .text_color(p.fg1)
                     .font(font::regular(14.0))
                     .desired_width(width - 28.0),
             )
+        })
+        .inner
+}
+
+/// A whole-number box in the [`field`] style, with a unit suffix.
+pub fn number(ui: &mut Ui, value: &mut f64, range: std::ops::RangeInclusive<f64>, unit: &str, width: f32) -> Response {
+    let p = pal(ui.ctx());
+    field_frame(ui)
+        .show(ui, |ui| {
+            ui.set_width(width - 28.0);
+            ui.spacing_mut().interact_size.y = 17.0;
+            ui.spacing_mut().button_padding = vec2(2.0, 0.0);
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 6.0;
+                let speed = ((range.end() - range.start()) / 400.0).max(1.0);
+                let r = ui.add(egui::DragValue::new(value).range(range).speed(speed).max_decimals(0));
+                if !unit.is_empty() {
+                    ui.label(RichText::new(unit).color(p.fg_a3).font(font::regular(14.0)));
+                }
+                r
+            })
+            .inner
         })
         .inner
 }
@@ -220,6 +256,7 @@ pub fn secret(ui: &mut Ui, text: &mut String, hint: &str, width: f32) -> Respons
                     .password(true)
                     .hint_text(RichText::new(hint).color(p.fg_a4))
                     .frame(false)
+                    .margin(egui::Margin::ZERO)
                     .text_color(p.fg1)
                     .font(font::regular(14.0))
                     .desired_width(width - 28.0),
@@ -242,6 +279,7 @@ pub fn area(ui: &mut Ui, text: &mut String, hint: &str, size: Vec2) -> Response 
                         egui::TextEdit::multiline(text)
                             .hint_text(RichText::new(hint).color(p.fg_a4))
                             .frame(false)
+                            .margin(egui::Margin::ZERO)
                             .text_color(p.fg1)
                             .font(font::regular(14.0))
                             .desired_width(size.x - 28.0)
