@@ -158,3 +158,12 @@ fn reopening_a_file_restores_its_tracks_and_delays() {
     assert_eq!(r.item.source.display_name(), "clip0.mp4");
     assert_eq!((r.subtitle_track, r.audio_track, r.subtitle_delay_us), (Some(4), Some(2), -4_000_000));
 }
+
+#[test]
+fn subtitle_size_changes_live_without_a_restart() {
+    let (_d, fake, mut app) = setup();
+    fake.sent.lock().clear();
+    app.update_settings(|s| s.subtitles.font_size = crate::domain::settings::FontSize::Larger);
+    let sent = fake.sent.lock();
+    assert!(sent.iter().any(|c| matches!(c, EngineCommand::SetSubtitleScale(170))));
+}

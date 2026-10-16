@@ -593,15 +593,14 @@ pub const TEXT_ENCODINGS: &[&str] = &[
 ];
 
 impl FontSize {
-    /// VLC's `freetype-rel-fontsize` values (0 = automatic).
-    pub fn rel_value(self) -> i32 {
+    /// Subtitle size as a percentage of VLC's automatic size (`sub-text-scale`).
+    pub fn scale_percent(self) -> i32 {
         match self {
-            FontSize::Automatic => 0,
-            FontSize::Smaller => 20,
-            FontSize::Small => 18,
-            FontSize::Normal => 16,
-            FontSize::Large => 12,
-            FontSize::Larger => 6,
+            FontSize::Automatic | FontSize::Normal => 100,
+            FontSize::Smaller => 60,
+            FontSize::Small => 80,
+            FontSize::Large => 130,
+            FontSize::Larger => 170,
         }
     }
 }

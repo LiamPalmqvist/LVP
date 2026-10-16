@@ -34,11 +34,24 @@ fn window_icon() -> Option<egui::IconData> {
 
 fn main() -> eframe::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
+    // Packaging helper: `notvlc --export-icon out.png` writes the app icon.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("--export-icon") {
+        let out = args.get(2).cloned().unwrap_or_else(|| "notvlc.png".into());
+        let icon = window_icon().expect("icon renders");
+        image::RgbaImage::from_raw(icon.width, icon.height, icon.rgba)
+            .expect("icon buffer")
+            .save(&out)
+            .expect("save icon");
+        return Ok(());
+    }
     let files: Vec<PathBuf> = std::env::args_os().skip(1).map(PathBuf::from).filter(|p| p.exists()).collect();
 
     let store = Arc::new(JsonStore::new());
     // Files from a second launch or from Finder arrive through this channel.
     let (inbox_tx, inbox_rx) = crossbeam_channel::unbounded();
+    #[cfg(not(unix))]
+    drop(inbox_tx);
     #[cfg(unix)]
     {
         let one = store
@@ -68,7 +81,7 @@ fn main() -> eframe::Result {
     };
     let probe = Arc::new(VlcProbe::new(engine.helper()));
     let mut app = App::new(engine, probe, store);
-    app.set_system_hooks(Arc::new(notvlc::infra::platform::MacHooks::new()));
+    app.set_system_hooks(Arc::new(notvlc::infra::platform::SystemIntegration::new()));
     app.set_inbox(inbox_rx);
 
     let size = app

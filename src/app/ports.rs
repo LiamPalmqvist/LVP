@@ -196,6 +196,8 @@ pub enum EngineCommand {
     SetAudioDelay(i64),
     SetSubtitleDelay(i64),
     SetSubtitleTiming(SubtitleTiming),
+    /// Subtitle size as a percentage of normal, applied live.
+    SetSubtitleScale(i32),
     SetChapter(i32),
     SetTitle(i32),
     Navigate(Nav),

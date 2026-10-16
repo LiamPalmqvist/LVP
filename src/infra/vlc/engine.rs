@@ -256,6 +256,7 @@ impl VlcEngine {
             restore: Restore::default(),
             wanted_audio: None,
             wanted_subtitle: None,
+            subtitle_scale: 100,
         };
         worker.apply_audio_effects();
         worker.apply_video_effects();
@@ -389,6 +390,8 @@ struct Worker {
     /// made while a file is opening or restarting).
     wanted_audio: Option<i32>,
     wanted_subtitle: Option<i32>,
+    /// `sub-text-scale` in percent.
+    subtitle_scale: i32,
 }
 
 #[derive(Default)]
@@ -529,6 +532,10 @@ impl Worker {
                 EngineCommand::SetSubtitleDelay(us) => {
                     (api.libvlc_video_set_spu_delay)(mp, us);
                     self.status.write().subtitle_delay_us = us;
+                }
+                EngineCommand::SetSubtitleScale(pct) => {
+                    self.subtitle_scale = pct.clamp(10, 500);
+                    self.apply_subtitle_scale();
                 }
                 EngineCommand::SetSubtitleTiming(t) => {
                     self.sub_timing = t;
@@ -835,6 +842,7 @@ impl Worker {
                         self.applied_video_chain = None;
                         self.apply_video_effects();
                         self.apply_deinterlace();
+                        self.apply_subtitle_scale();
                         self.emit(EngineEvent::VideoOutput(u as u32));
                     }
                     event::MP_ES_ADDED | event::MP_ES_DELETED | event::MP_ES_SELECTED => {
@@ -1092,6 +1100,12 @@ impl Worker {
             o.set_everywhere(s.mp, "video output", "sub-source", &Var::Str(subs.clone()));
             self.applied_sub_chain = Some(subs);
         }
+    }
+
+    /// Subtitle size, live: VLC scales subtitle text by `sub-text-scale`.
+    fn apply_subtitle_scale(&self) {
+        let s = self.s();
+        s.objects().set_everywhere(s.mp, "video output", "sub-text-scale", &Var::Int(self.subtitle_scale as i64));
     }
 
     fn apply_deinterlace(&self) {

@@ -178,10 +178,10 @@ pub fn playback(s: &Settings) -> Vec<String> {
     if st.monospace_font != "System monospace" && !st.monospace_font.is_empty() {
         a.push(format!("--freetype-monofont={}", st.monospace_font));
     }
-    match st.size_units {
-        SizeUnits::Relative => a.push(format!("--freetype-rel-fontsize={}", st.font_size.rel_value())),
-        SizeUnits::Pixels if st.font_size_px > 0 => a.push(format!("--freetype-fontsize={}", st.font_size_px)),
-        SizeUnits::Pixels => {}
+    // Relative sizes are applied live as `sub-text-scale` (see
+    // `FontSize::scale_percent`); only a fixed pixel size needs a restart.
+    if st.size_units == SizeUnits::Pixels && st.font_size_px > 0 {
+        a.push(format!("--freetype-fontsize={}", st.font_size_px));
     }
     if st.bold {
         a.push("--freetype-bold".into());
@@ -208,16 +208,6 @@ pub fn playback(s: &Settings) -> Vec<String> {
             a.push(format!("--freetype-background-color={}", rgb(st.background_color)));
         }
     }
-    a.push(format!(
-        "--sub-text-scale={}",
-        match st.font_size {
-            FontSize::Smaller => 75,
-            FontSize::Small => 90,
-            FontSize::Large => 125,
-            FontSize::Larger => 150,
-            _ => 100,
-        }
-    ));
     match st.position {
         SubPosition::Bottom => {}
         SubPosition::Center => a.push("--sub-margin=-200".into()),
@@ -400,5 +390,15 @@ mod tests {
         ] {
             assert!(a.iter().any(|x| x == want), "missing {want}");
         }
+    }
+
+    #[test]
+    fn subtitle_size_does_not_restart_the_engine() {
+        // The engine rebuilds when these arguments change, which pauses playback;
+        // the relative size is applied live instead.
+        let mut s = Settings::default();
+        let before = playback(&s);
+        s.subtitles.font_size = FontSize::Larger;
+        assert_eq!(playback(&s), before);
     }
 }

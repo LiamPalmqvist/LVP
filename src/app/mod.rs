@@ -172,6 +172,7 @@ impl App {
         };
         app.engine.send(EngineCommand::SetVolume(app.settings.audio.volume));
         app.engine.send(EngineCommand::SetSubtitleTiming(app.subtitle_timing));
+        app.engine.send(EngineCommand::SetSubtitleScale(app.settings.subtitles.font_size.scale_percent()));
         app
     }
 
@@ -1234,6 +1235,9 @@ impl App {
                 self.settings.video.deinterlace,
                 self.settings.video.deinterlace_method.clone(),
             ));
+        }
+        if self.settings.subtitles.font_size != before.subtitles.font_size {
+            self.engine.send(EngineCommand::SetSubtitleScale(self.settings.subtitles.font_size.scale_percent()));
         }
         if self.settings.audio.visualizer != before.audio.visualizer {
             self.engine.send(EngineCommand::SetVisualizer(self.settings.audio.visualizer));

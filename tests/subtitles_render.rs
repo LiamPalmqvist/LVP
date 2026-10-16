@@ -187,3 +187,69 @@ fn adding_subtitles_to_a_hardware_decoded_video_shows_them() {
     // Restarting from zero would need another two seconds to get back here.
     assert!(wait(|| e.status().time_ms >= before, 1), "playback restarted from the beginning instead of in place");
 }
+
+/// Bright pixels averaged over a few frames, to smooth out cue changes.
+fn bright_avg(v: &VideoOutput) -> usize {
+    let mut sum = 0;
+    for _ in 0..4 {
+        sum += bright_pixels(v);
+        std::thread::sleep(Duration::from_millis(120));
+    }
+    sum / 4
+}
+
+fn measure_scale(e: &VlcEngine, v: &VideoOutput) -> (usize, usize) {
+    assert!(wait(|| bright_pixels(v) > 150, 6), "no subtitle text");
+    let normal = bright_avg(v);
+    e.send(EngineCommand::SetSubtitleScale(200));
+    std::thread::sleep(Duration::from_millis(600));
+    let big = bright_avg(v);
+    (normal, big)
+}
+
+#[test]
+fn subtitle_size_changes_live() {
+    let dir = tempfile::tempdir().unwrap();
+    if !make(dir.path()) {
+        eprintln!("ffmpeg unavailable, skipping");
+        return;
+    }
+    let Some(e) = engine() else { return };
+    let v = e.video();
+    open(&e, &dir.path().join("plain.mp4"), vec![dir.path().join("plain.srt")]);
+    assert!(wait(|| e.status().state == PlayerState::Playing && v.size().is_some(), 10));
+    let (normal, big) = measure_scale(&e, &v);
+    eprintln!("srt: normal {normal}, at 200% {big}");
+    assert!(big > normal * 2, "SRT text did not grow ({normal} -> {big})");
+    let t = e.status().time_ms;
+    assert!(t > 1000, "playback should have kept going");
+
+    open(&e, &dir.path().join("two_subs.mkv"), vec![]);
+    assert!(wait(|| e.status().state == PlayerState::Playing && v.size().is_some(), 10));
+    e.send(EngineCommand::SetSubtitleScale(100));
+    e.send(EngineCommand::SetSubtitleTrack(2));
+    let (normal, big) = measure_scale(&e, &v);
+    eprintln!("ass: normal {normal}, at 200% {big}");
+}
+
+#[test]
+#[ignore = "experiment: plain-text decoding of ASS"]
+fn ass_as_plain_text_experiment() {
+    let dir = tempfile::tempdir().unwrap();
+    if !make(dir.path()) {
+        return;
+    }
+    let mut s = Settings::default();
+    s.recording.discover_cast = false;
+    s.general.extra_args = "--aout=dummy".into();
+    s.performance.hw_decoding = notvlc::domain::settings::HwDecoding::Disabled;
+    let Ok(e) = VlcEngine::new(&s) else { return };
+    let v = e.video();
+    let mut item = MediaItem::file(dir.path().join("two_subs.mkv"));
+    item.options = vec![std::env::var("ASS_CODEC").unwrap_or_else(|_| ":codec=subsdec,all".into())];
+    e.send(EngineCommand::Open(Box::new(OpenRequest::new(item))));
+    assert!(wait(|| e.status().state == PlayerState::Playing && v.size().is_some(), 10));
+    e.send(EngineCommand::SetSubtitleTrack(2));
+    let (normal, big) = measure_scale(&e, &v);
+    eprintln!("ass via subsdec: normal {normal}, at 200% {big}");
+}
