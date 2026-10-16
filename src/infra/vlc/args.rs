@@ -381,4 +381,24 @@ mod tests {
             assert!(a.contains(&want.to_string()), "{want} missing from {a:?}");
         }
     }
+
+    #[test]
+    fn subtitle_style_reaches_freetype() {
+        let mut s = Settings::default();
+        s.subtitles.text_color = 0xB8B8B8;
+        s.subtitles.outline_color = 0x0C0C0C;
+        s.subtitles.bold = true;
+        s.subtitles.font = "Inter".into();
+        s.subtitles.position = SubPosition::Top;
+        let a = playback(&s);
+        for want in [
+            "--freetype-color=12105912",
+            "--freetype-outline-color=789516",
+            "--freetype-bold",
+            "--freetype-font=Inter",
+            "--sub-margin=-400",
+        ] {
+            assert!(a.iter().any(|x| x == want), "missing {want}");
+        }
+    }
 }

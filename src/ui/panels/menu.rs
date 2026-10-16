@@ -10,7 +10,7 @@ use crate::domain::settings::{RepeatMode, SPEED_STEPS, Visualizer};
 use crate::domain::shortcuts::Action;
 use crate::ui::icons::Icon;
 use crate::ui::state::{PlayerPanel, UiState};
-use crate::ui::theme::{Palette, font, with_alpha};
+use crate::ui::theme::{Palette, font};
 use crate::ui::widgets::{self, pal};
 
 const WIDTH: f32 = 292.0;
@@ -18,7 +18,7 @@ const ROW_H: f32 = 48.0;
 
 fn frame(p: &Palette) -> egui::Frame {
     egui::Frame::new()
-        .fill(with_alpha(p.bg_a4, 0.95))
+        .fill(p.bg_a1)
         .corner_radius(10)
         .inner_margin(egui::Margin::same(4))
         .stroke(egui::Stroke::new(1.0, p.divider_dim))
@@ -32,7 +32,7 @@ fn style_menu(ui: &mut Ui) {
     s.spacing.item_spacing = vec2(0.0, 0.0);
     s.spacing.menu_margin = egui::Margin::same(4);
     s.visuals.menu_corner_radius = CornerRadius::same(10);
-    s.visuals.window_fill = with_alpha(p.bg_a4, 0.97);
+    s.visuals.window_fill = p.bg_a1;
     ui.set_min_width(WIDTH - 8.0);
 }
 
@@ -157,9 +157,9 @@ fn contents(ui: &mut Ui, app: &mut App, st: &mut UiState, p: &Palette) {
     action(ui, app, st, Some((Icon::Ui2tone, grey)), "Hide UI", Action::HideUi);
     divider(ui);
     sub(ui, Some((Icon::PlaybackSelected2tone, grey)), "Playback", |ui| playback_menu(ui, app, st));
-    sub(ui, Some((Icon::Video, grey)), "Video", |ui| video_menu(ui, app, st));
-    sub(ui, Some((Icon::Audio, grey)), "Audio", |ui| audio_menu(ui, app, st));
-    sub(ui, Some((Icon::Subtitles, grey)), "Subtitle", |ui| subtitle_menu(ui, app, st));
+    sub(ui, Some((Icon::Video2tone, grey)), "Video", |ui| video_menu(ui, app, st));
+    sub(ui, Some((Icon::Audio2tone, grey)), "Audio", |ui| audio_menu(ui, app, st));
+    sub(ui, Some((Icon::Subtitles2tone, grey)), "Subtitle", |ui| subtitle_menu(ui, app, st));
     sub(ui, Some((Icon::Settings2tone, grey)), "More Settings", |ui| {
         action(ui, app, st, None, "Effects and Filters", Action::EffectsFilters);
         action(ui, app, st, None, "Media Information", Action::MediaInfo);

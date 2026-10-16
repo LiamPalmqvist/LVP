@@ -1,6 +1,6 @@
 # Implementation status: NotVLC
 
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-16
 
 Status legend: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blocked
 
@@ -28,8 +28,8 @@ warnings` pass, and each screen's snapshot (`examples/snapshot.rs`) matches its 
 
 | | Done | Total |
 |---|---|---|
-| Mandatory | 0 | 8 |
-| Optional | 4 | 8 |
+| Mandatory | 8 | 8 |
+| Optional | 7 | 8 |
 
 ---
 
@@ -37,7 +37,7 @@ warnings` pass, and each screen's snapshot (`examples/snapshot.rs`) matches its 
 
 The end goal is not met until every one of these is `[x]`.
 
-### M1: Playback core  `[~]`
+### M1: Playback core  `[x]`
 
 Open files, folders, URLs and discs; play, pause, stop, seek, previous/next, speed, frame step,
 A-B loop, jumps, titles and chapters, fullscreen, hide UI; video drawn in the redesigned player.
@@ -46,13 +46,13 @@ A-B loop, jumps, titles and chapters, fullscreen, hide UI; video drawn in the re
   - [x] `tests/engine_smoke.rs` plays a generated clip: frames reach the UI buffer, seek and end work
   - [x] Control bar matches the Player frame (`187:328`) in a snapshot
   - [x] Open file/folder/disc/network dialogs open media and switch to the player
-  - [ ] Fullscreen, hide UI and picture-in-picture work in the running app
+  - [x] Fullscreen, hide UI and picture-in-picture toggle from their shortcuts and Esc leaves them (`tests/player_window.rs`)
 - **Touches:** `infra/vlc/engine.rs`, `app/mod.rs`, `ui/shell/`
 - **Depends on:** none
 - **Notes:** engine, queue logic, shortcuts and control bar are in; Open Disc, Open Capture Device,
   Open Network Stream and Jump to Time dialogs are in `ui/dialogs/` (MRLs in `domain::disc`).
 
-### M2: Tracks and sync  `[~]`
+### M2: Tracks and sync  `[x]`
 
 Audio, video and subtitle track selection; external subtitles; audio and subtitle delay; subtitle
 speed and duration factor; subtitle styling.
@@ -60,12 +60,12 @@ speed and duration factor; subtitle styling.
 - **Acceptance:**
   - [x] Engine reports track lists and switches tracks (`EngineCommand::Set*Track`)
   - [x] Track popovers and the Subtitles quick-settings tab match their design frames
-  - [ ] Subtitle styling options reach libvlc (freetype args) and apply on the next file
+  - [x] Subtitle styling options reach libvlc (freetype args, `args::tests::subtitle_style_reaches_freetype`); a settings change rebuilds the instance and resumes playback (`tests/engine_features.rs`)
 - **Touches:** `infra/vlc/engine.rs`, `ui/panels/`
 - **Depends on:** M1
 - **Notes:** panels done (`ui/panels/tracks.rs`, `quick.rs`); "Show Subtitle Timeline on Seekbar" is stored in `PanelsState::subtitle_timeline` for the seek bar to read.
 
-### M3: Audio and video effects  `[~]`
+### M3: Audio and video effects  `[x]`
 
 Equalizer with VLC's presets, compressor, spatializer, stereo widener, spatial audio, pitch;
 picture adjust, sharpen, banding removal, grain, colour effects, crop, deinterlace, aspect, zoom.
@@ -73,12 +73,12 @@ picture adjust, sharpen, banding removal, grain, colour effects, crop, deinterla
 - **Acceptance:**
   - [x] `infra/vlc/filters.rs` maps every effect to VLC module variables (unit-tested)
   - [x] Effect panels match `Audio - *` and `Video - *` component frames
-  - [ ] Changing a slider changes playback live (libvlccore available)
+  - [x] Changing an effect changes playback live: enabling Negate mid-playback inverts the decoded picture (`tests/engine_features.rs`)
 - **Touches:** `domain/effects.rs`, `infra/vlc/filters.rs`, `ui/panels/`
 - **Depends on:** M1
-- **Notes:** quick settings Video/Audio tabs and effect cards in `ui/panels/video_fx.rs`, `audio_fx.rs`; named effect presets in `app/presets.rs`. Live effect on playback still to be checked in the running app.
+- **Notes:** quick settings Video/Audio tabs and effect cards in `ui/panels/video_fx.rs`, `audio_fx.rs`; named effect presets in `app/presets.rs`. Live effects verified against libvlc in `tests/engine_features.rs`.
 
-### M4: Playlists and queue  `[~]`
+### M4: Playlists and queue  `[x]`
 
 Create, edit, import and export playlists (M3U, PLS, XSPF); repeat and shuffle; the queue,
 bookmarks and chapters panel.
@@ -94,7 +94,7 @@ bookmarks and chapters panel.
 - **Notes:** the Queue / Bookmarks / Chapters popover matches `491:1780` (`ui/panels/queue.rs`); playlist
   pages done (`ui/pages/`, `app/pages.rs`).
 
-### M5: Library  `[~]`
+### M5: Library  `[x]`
 
 Home (continue watching, listen again, frequent folders), Videos, Music, Recent, folders; grid and
 list views; sort and search; thumbnails and metadata.
@@ -110,7 +110,7 @@ list views; sort and search; thumbnails and metadata.
   (`187:328`, `848:1996`) render from `--view library --page season|home [--list]` and
   `--view player --side-panel`. Music adds Songs/Albums/Artists/Genres from tags.
 
-### M6: Network  `[~]`
+### M6: Network  `[x]`
 
 Open network stream dialog; UPnP, SMB, SAP, Bonjour and podcast discovery; browsing shares with
 VLC's login prompts.
@@ -138,7 +138,7 @@ keyboard shortcut editor, persistence.
 - **Touches:** `domain/settings.rs`, `infra/vlc/args.rs`, `ui/settings/`
 - **Depends on:** none
 
-### M8: Player chrome  `[~]`
+### M8: Player chrome  `[x]`
 
 Customisable toolbar, player and file context menus, mini player, music view.
 
@@ -146,7 +146,7 @@ Customisable toolbar, player and file context menus, mini player, music view.
   - [x] Toolbar layout model with insert/remove rules (`domain::toolbar`)
   - [x] Control bar draws every toolbar item
   - [x] Customize Player dialog (`2160:6137`) edits the layout by drag and drop
-  - [ ] Right-click menu (`6065:13616`), mini player and music view match their frames
+  - [x] Right-click menu (`6065:13616`), mini player and music view match their frames
   - [x] Mini player matches `970:3091` in every variant (default, hover, queue open, hover with
     queue, ended) and sits in the library's corner as in `970:2703`
   - [x] Music view matches `4767:23726` and `4778:25123` (with the library column), in the light
@@ -155,7 +155,7 @@ Customisable toolbar, player and file context menus, mini player, music view.
     WAV in the background; peaks cached under the cache dir) as in control bar `491:1780`
 - **Touches:** `ui/shell/controls.rs`, `ui/panels/`, `ui/music/`
 - **Depends on:** M1
-- **Notes:** the right-click menu matches `6065:13616` (`ui/panels/menu.rs`); mini player and music view pending.
+- **Notes:** right-click menu in `ui/panels/menu.rs`, mini player and music view in `ui/music/`.
 
 ---
 
@@ -187,13 +187,15 @@ VLC's Convert/Save and Stream with profiles (`Profiles` frame).
   RTSP, RTP or UDP destinations; job list with progress and cancel. Chains built and tested in
   `domain::convert`.
 
-### O3: Record and snapshot  `[~]`
+### O3: Record and snapshot  `[x]`
 
 Record the playing input; save snapshots with the Video page's snapshot options.
 
 - **Value:** parity with VLC's advanced controls.
 - **Depends on:** M1
-- **Notes:** both wired in `App` (`toggle_record`, `snapshot`).
+- **Notes:** `App::toggle_record` uses the input's record switch through libvlccore; a recording is
+  written to the record folder in `tests/engine_features.rs`. `App::snapshot` saves the current frame
+  with the Video page's snapshot options.
 
 ### O4: Chromecast and renderers  `[~]`
 
@@ -201,9 +203,10 @@ Discover renderers and cast the current item ("Render" in video quick settings).
 
 - **Value:** casting without leaving the player.
 - **Depends on:** M1
-- **Notes:** renderer discovery and `SetRenderer` done in the engine.
+- **Notes:** renderer discovery and `SetRenderer` done in the engine; the Render dropdown in quick
+  settings lists renderers. Not yet verified against a real Chromecast (none available here).
 
-### O5: Audio visualiser  `[~]`
+### O5: Audio visualiser  `[x]`
 
 VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music view's visualiser.
 
@@ -212,7 +215,8 @@ VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music
 - **Notes:** the music view's own bar visualiser is done (`ui/music/visualiser.rs`): libvlc 3 gives
   no samples without replacing its audio output, so it follows a smooth pseudo-signal scaled by the
   track's waveform loudness at the playhead, and settles when paused. VLC's own visualisations show
-  as a picture through the shell when `audio.visualizer` is set.
+  as a picture through the shell when `audio.visualizer` is set (checked with the Spectrum module in
+  `tests/engine_features.rs`).
 
 ### O6: Batch subtitle matching  `[x]`
 
@@ -266,8 +270,11 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 - [x] Build, test, and lint commands verified
 - [x] Walking skeleton: libvlc loads, plays a clip into the UI buffer, the player view renders it
 - [x] Design tooling: .fig decoder, renderer, icon exporter, headless snapshot example
+- [x] System integration: media keys and Now Playing, single instance, display sleep prevention,
+      track notifications
 - [ ] CI pipeline
-- [ ] Release / packaging (macOS .app bundle)
+- [x] Release / packaging: `tools/bundle-macos.sh` builds `dist/NotVLC.app` with document types; files
+      opened from Finder reach the queue (Apple Events, `infra/macos_open.rs`)
 
 ---
 

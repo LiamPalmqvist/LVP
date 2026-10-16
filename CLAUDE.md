@@ -32,12 +32,13 @@ toolchain.
 
 ```bash
 cargo build                                   # build
-cargo test                                    # unit tests + libvlc smoke test (skips if VLC/ffmpeg missing)
+cargo test                                    # unit, UI and libvlc tests (libvlc ones skip if VLC/ffmpeg missing; silent)
 cargo test --lib domain::playlist             # run one module's tests
 cargo clippy --all-targets -- -D warnings     # lint
 cargo fmt                                     # format
 cargo run                                     # run the app (needs /Applications/VLC.app or NOTVLC_LIBVLC)
 cargo run --example snapshot -- --view player /tmp/p.png   # headless render of the UI with demo content
+tools/bundle-macos.sh                         # release build packaged as dist/NotVLC.app (--debug for a dev build)
 ```
 
 `cargo run --example snapshot -- --help`-style flags are documented at the top of
