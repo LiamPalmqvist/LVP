@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.90.0"
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      # Mesa's software Vulkan driver lets the headless UI tests render with wgpu.
+      # VLC is not installed, so the libvlc tests skip themselves.
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libxkbcommon-dev libwayland-dev libvulkan1 mesa-vulkan-drivers
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked

@@ -272,7 +272,7 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 - [x] Design tooling: .fig decoder, renderer, icon exporter, headless snapshot example
 - [x] System integration: media keys and Now Playing, single instance, display sleep prevention,
       track notifications
-- [ ] CI pipeline
+- [x] CI pipeline: `.github/workflows/ci.yml` runs fmt, clippy and tests on Linux (libvlc tests skip there)
 - [x] Release / packaging: `tools/bundle-macos.sh` builds `dist/NotVLC.app` with document types; files
       opened from Finder reach the queue (Apple Events, `infra/macos_open.rs`)
 
