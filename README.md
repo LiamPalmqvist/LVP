@@ -1,7 +1,9 @@
 # NotVLC
 
 A media player with all of VLC's features and a redesigned interface, written in Rust on top of
-VLC's own engine.
+VLC's own engine. This design was made by the YouTuber [Juxtopposed](https://www.youtube.com/@juxtopposed) in their video [I Redesigned VLC After 25 Years](https://www.youtube.com/watch?v=ERFeOgqk324)
+
+All credit to the design goes to Juxtopposed.
 
 ## Prerequisites
 
