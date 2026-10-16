@@ -81,9 +81,9 @@ pub fn button(ui: &mut Ui, label: &str, kind: ButtonKind) -> Response {
 pub fn button_with(ui: &mut Ui, icon: Option<Icon>, label: &str, kind: ButtonKind, min: Vec2) -> Response {
     let p = pal(ui.ctx());
     let f = font::semibold(14.0);
-    let galley = ui.painter().layout_no_wrap(label.to_string(), f, Color32::WHITE);
+    let text_w = ui.painter().layout_no_wrap(label.to_string(), f.clone(), Color32::WHITE).size().x;
     let icon_w = if icon.is_some() { 26.0 } else { 0.0 };
-    let w = (galley.size().x + icon_w + 32.0).max(min.x);
+    let w = (text_w + icon_w + 32.0).max(min.x);
     let (rect, resp) = ui.allocate_exact_size(vec2(w, min.y.max(32.0)), Sense::click());
     let hovered = resp.hovered();
     let (bg, fg) = match kind {
@@ -98,6 +98,9 @@ pub fn button_with(ui: &mut Ui, icon: Option<Icon>, label: &str, kind: ButtonKin
         ButtonKind::Danger => (if hovered { with_alpha(p.danger, 0.15) } else { Color32::TRANSPARENT }, p.danger),
     };
     ui.painter().rect_filled(rect, CornerRadius::same(6), bg);
+    // Lay the text out in its final colour; a galley's own colour wins over
+    // the one passed when painting it.
+    let galley = ui.painter().layout_no_wrap(label.to_string(), f, fg);
     let content_w = galley.size().x + icon_w;
     let mut x = rect.center().x - content_w / 2.0;
     if let Some(i) = icon {
@@ -478,6 +481,7 @@ pub fn text_field(ui: &mut Ui, text: &mut String, hint: &str, width: f32) -> Res
                 egui::TextEdit::singleline(text)
                     .hint_text(RichText::new(hint).color(p.fg_a4))
                     .frame(false)
+                    .margin(egui::Margin::ZERO)
                     .text_color(p.fg_a1)
                     .font(font::regular(14.0))
                     .desired_width(width - 28.0),
@@ -498,6 +502,7 @@ pub fn password_field(ui: &mut Ui, text: &mut String, hint: &str, width: f32) ->
                     .password(true)
                     .hint_text(RichText::new(hint).color(p.fg_a4))
                     .frame(false)
+                    .margin(egui::Margin::ZERO)
                     .text_color(p.fg_a1)
                     .font(font::regular(14.0))
                     .desired_width(width - 28.0),

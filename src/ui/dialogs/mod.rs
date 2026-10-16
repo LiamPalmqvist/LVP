@@ -108,6 +108,28 @@ impl DialogsState {
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
+    // A library menu names the item a dialog should act on; otherwise the
+    // dialogs use the playing item.
+    if let Some(item) = st.library.action_item.take() {
+        let d = &mut st.dialogs;
+        if d.convert {
+            d.convert_source = Some(vec![item]);
+        } else if d.add_subtitles {
+            let folder = match item.source.path() {
+                Some(p) if p.is_dir() => Some(p.to_path_buf()),
+                Some(p) => p.parent().map(|d| d.to_path_buf()),
+                None => None,
+            };
+            if let Some(f) = folder {
+                d.add_subtitles_to_folder(f, None);
+            }
+        } else if d.media_info {
+            d.info.item = Some(item);
+        }
+    }
+    if !st.dialogs.media_info {
+        st.dialogs.info.item = None;
+    }
     if st.dialogs.open_network {
         network::show(ctx, app, st);
     }

@@ -160,10 +160,21 @@ impl NotVlcApp {
         }
     }
 
+    /// True while a modal surface owns the keyboard.
+    fn modal_open(&self) -> bool {
+        self.st.settings.open
+            || self.st.dialogs.any_open()
+            || self.st.dialogs.shortcuts
+            || self.st.dialogs.new_playlist
+            || self.st.panels.customize_open
+            || !self.app.dialogs.is_empty()
+    }
+
     fn handle_keys(&mut self, ctx: &egui::Context) {
         if ctx.wants_keyboard_input() {
             return;
         }
+        let modal = self.modal_open();
         let events: Vec<(Key, egui::Modifiers)> = ctx.input(|i| {
             i.events
                 .iter()
@@ -178,6 +189,10 @@ impl NotVlcApp {
             let chord = KeyChord { ctrl: m.command, alt: m.alt, shift: m.shift, key: name.to_string() };
             // Escape also closes whatever is open on top.
             if name == "Esc" && self.close_topmost() {
+                continue;
+            }
+            // Modals handle their own keys (Esc, Enter); nothing reaches the player.
+            if modal {
                 continue;
             }
             if let Some(action) = self.app.settings.controls.shortcuts.action_for(&chord)

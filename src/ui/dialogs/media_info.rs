@@ -17,6 +17,8 @@ use crate::ui::widgets::{self, pal};
 #[derive(Default)]
 pub struct InfoState {
     tab: usize,
+    /// The item to describe when it is not the one playing (from a library menu).
+    pub item: Option<crate::domain::media::MediaItem>,
 }
 
 impl InfoState {
@@ -43,14 +45,17 @@ fn bytes(n: i64) -> String {
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut InfoState) {
-    let item = app.queue.current_item().cloned();
+    let current = app.queue.current_item().cloned();
+    let item = st.item.clone().or_else(|| current.clone());
+    // Live player data only applies to the item that is playing.
+    let is_current = item.as_ref().map(|i| &i.source) == current.as_ref().map(|i| &i.source);
     let mut meta: MediaMeta = item.as_ref().map(|i| i.meta.clone()).unwrap_or_default();
     if let Some(i) = &item
         && let Some(m) = app.meta_for(&i.source)
     {
         meta.merge(m);
     }
-    if app.has_media() {
+    if app.has_media() && is_current {
         meta.merge(app.status.meta.clone());
     }
     let art = item.as_ref().and_then(|i| {
@@ -68,9 +73,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut InfoSt
         .as_ref()
         .map(|i| i.source.path().map(|p| p.display().to_string()).unwrap_or_else(|| i.source.mrl()))
         .unwrap_or_default();
-    let stats = app.status.stats;
+    let stats = if is_current { app.status.stats } else { Default::default() };
     let collecting = app.settings.general.collect_stats;
-    let length = app.status.length_ms.max(meta.duration_ms.unwrap_or(0));
+    let length = if is_current { app.status.length_ms } else { 0 }.max(meta.duration_ms.unwrap_or(0));
     let mut close = false;
     let out = frame::modal(ctx, "media-info", "Media Information", vec2(1048.0, 680.0), true, |ui, part| match part {
         Part::Body => {
