@@ -556,7 +556,9 @@ fn folder_crumbs(app: &App, dir: &Path, music: bool) -> Vec<(String, Option<Page
 fn folder(app: &mut App, st: &mut UiState, dir: &Path, q: &str, sort: Option<SortOption>, music: bool) -> PageModel {
     let mut entries = st.library.cache.listing(app, dir, music);
     entries.retain(|e| keep(&e.item, q));
-    sort_folder(&mut entries, sort.unwrap_or(SortOption::TitleAsc));
+    // Video folders put what is left to watch first, as in the design (970:2703).
+    let natural = if music { SortOption::TitleAsc } else { SortOption::UnwatchedFirst };
+    sort_folder(&mut entries, sort.unwrap_or(natural));
     let mut m = PageModel::new(PageKind::Folder { path: dir.to_path_buf(), music }, folder_crumbs(app, dir, music));
     if !dir.is_dir() {
         m.error = Some(format!("{} is not available.", dir.display()));

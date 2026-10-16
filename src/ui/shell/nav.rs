@@ -129,47 +129,4 @@ pub fn sidebar(ui: &mut Ui, app: &mut App, st: &mut UiState) {
         }
         y += 46.0;
     }
-    // Playlists under the main entries, like VLC's playlist tree.
-    let lists: Vec<(u64, String)> = app.library.playlists().iter().map(|pl| (pl.id, pl.name.clone())).collect();
-    if !lists.is_empty() {
-        y += 8.0;
-        ui.painter().text(
-            pos2(panel.min.x + 16.0, y + 8.0),
-            Align2::LEFT_CENTER,
-            "Playlists",
-            font::regular(12.0),
-            p.fg_a3,
-        );
-        y += 22.0;
-        for (id, name) in lists {
-            if y > panel.max.y - 40.0 {
-                break;
-            }
-            let r = Rect::from_min_size(pos2(panel.min.x + 8.0, y), vec2(panel.width() - 16.0, 30.0));
-            let resp = ui.interact(r, ui.id().with(("pl", id)), Sense::click());
-            let on = st.page == Page::Playlist(id);
-            if resp.hovered() || on {
-                ui.painter().rect_filled(r, 4, if on { p.bg_a1 } else { p.hover });
-            }
-            widgets::paint_icon(
-                ui,
-                Rect::from_min_size(pos2(r.min.x + 6.0, r.center().y - 10.0), vec2(20.0, 20.0)),
-                Icon::Lists,
-                p.fg_a3,
-            );
-            widgets::text_clipped(
-                ui,
-                pos2(r.min.x + 36.0, r.center().y),
-                Align2::LEFT_CENTER,
-                &name,
-                font::regular(14.0),
-                if on { p.fg1 } else { p.fg_a2 },
-                r.width() - 44.0,
-            );
-            if resp.clicked() {
-                st.navigate(Page::Playlist(id));
-            }
-            y += 32.0;
-        }
-    }
 }
