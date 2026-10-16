@@ -29,7 +29,7 @@ warnings` pass, and each screen's snapshot (`examples/snapshot.rs`) matches its 
 | | Done | Total |
 |---|---|---|
 | Mandatory | 0 | 8 |
-| Optional | 0 | 8 |
+| Optional | 4 | 8 |
 
 ---
 
