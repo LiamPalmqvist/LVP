@@ -140,3 +140,21 @@ fn resume_point_is_used_when_reopening() {
     });
     assert_eq!(start, Some(Some(120_000)));
 }
+
+#[test]
+fn reopening_a_file_restores_its_tracks_and_delays() {
+    let (_d, fake, mut app) = setup();
+    app.play_items(items(2), 0, None);
+    app.set_subtitle_track(4);
+    app.set_audio_track(2);
+    app.set_subtitle_delay(-4_000_000);
+    app.play_index(1);
+    app.play_index(0);
+    let last = fake.sent.lock().iter().rev().find_map(|c| match c {
+        EngineCommand::Open(r) => Some((**r).clone()),
+        _ => None,
+    });
+    let r = last.unwrap();
+    assert_eq!(r.item.source.display_name(), "clip0.mp4");
+    assert_eq!((r.subtitle_track, r.audio_track, r.subtitle_delay_us), (Some(4), Some(2), -4_000_000));
+}

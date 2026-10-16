@@ -55,10 +55,8 @@ fn mean_rgb(v: &VideoOutput) -> Option<[f32; 3]> {
 
 fn open(engine: &VlcEngine, path: &Path) {
     engine.send(EngineCommand::Open(Box::new(OpenRequest {
-        item: MediaItem::file(path),
-        start_ms: None,
-        paused: false,
         subtitles: vec![],
+        ..OpenRequest::new(MediaItem::file(path))
     })));
 }
 

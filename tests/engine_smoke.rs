@@ -57,10 +57,8 @@ fn plays_and_probes_a_clip() {
     };
     let video = engine.video();
     engine.send(EngineCommand::Open(Box::new(OpenRequest {
-        item: MediaItem::file(&clip),
-        start_ms: None,
-        paused: false,
         subtitles: vec![],
+        ..OpenRequest::new(MediaItem::file(&clip))
     })));
     assert!(wait(|| video.size().is_some(), 10), "no video frame arrived");
     assert_eq!(video.size(), Some((320, 240)));

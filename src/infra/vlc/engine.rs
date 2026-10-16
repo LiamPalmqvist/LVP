@@ -19,7 +19,7 @@ use crate::app::ports::*;
 use crate::app::video::VideoOutput;
 use crate::domain::effects::{AudioEffects, DeinterlaceMode, StereoMode, VideoEffects};
 use crate::domain::media::{MediaSource, path_to_file_url};
-use crate::domain::settings::{PostProcessing, Settings, Visualizer};
+use crate::domain::settings::{HwDecoding, PostProcessing, Settings, Visualizer};
 
 /// Largest picture we ask VLC to render into; bigger sources are scaled.
 const MAX_PIXELS: u64 = 3840 * 2160;
@@ -252,6 +252,10 @@ impl VlcEngine {
             meta_dirty: false,
             last_slow_poll: Instant::now(),
             media_events: None,
+            software_decoding: false,
+            restore: Restore::default(),
+            wanted_audio: None,
+            wanted_subtitle: None,
         };
         worker.apply_audio_effects();
         worker.apply_video_effects();
@@ -377,6 +381,22 @@ struct Worker {
     last_slow_poll: Instant,
     /// Media whose meta events we listen to, and the boxed sender they use.
     media_events: Option<(Media, Box<Sender<Raw>>)>,
+    /// Whether the current item was opened with software decoding.
+    software_decoding: bool,
+    /// Per-file choices to re-apply once the item is playing.
+    restore: Restore,
+    /// Track choices still waiting for their tracks to exist (a choice
+    /// made while a file is opening or restarting).
+    wanted_audio: Option<i32>,
+    wanted_subtitle: Option<i32>,
+}
+
+#[derive(Default)]
+struct Restore {
+    subtitles_off: bool,
+    audio_delay_us: i64,
+    subtitle_delay_us: i64,
+    delays_applied: bool,
 }
 
 impl Worker {
@@ -473,6 +493,7 @@ impl Worker {
                 }
                 EngineCommand::SetAudioTrack(id) => {
                     (api.libvlc_audio_set_track)(mp, id);
+                    self.wanted_audio = Some(id);
                     self.tracks_dirty = true;
                 }
                 EngineCommand::SetVideoTrack(id) => {
@@ -481,9 +502,17 @@ impl Worker {
                 }
                 EngineCommand::SetSubtitleTrack(id) => {
                     (api.libvlc_video_set_spu)(mp, id);
+                    self.wanted_subtitle = Some(id);
+                    self.restore.subtitles_off = false;
                     self.tracks_dirty = true;
                 }
                 EngineCommand::AddSubtitle(path) => {
+                    // Kept on the request so a restart (software decoding) keeps it.
+                    if let Some(cur) = self.current.as_mut()
+                        && !cur.request.subtitles.contains(&path)
+                    {
+                        cur.request.subtitles.push(path.clone());
+                    }
                     let uri = cstring(&path_to_file_url(&path));
                     (api.libvlc_media_player_add_slave)(mp, ffi::slave_type::SUBTITLE, uri.as_ptr(), true);
                     self.tracks_dirty = true;
@@ -592,6 +621,38 @@ impl Worker {
         if req.paused {
             media.add_option(":start-paused");
         }
+        // Remembered track choices take effect as the file opens.
+        if let Some(t) = req.audio_track.filter(|t| *t >= 0) {
+            media.add_option(&format!(":audio-track-id={t}"));
+        }
+        if let Some(t) = req.subtitle_track.filter(|t| *t >= 0) {
+            media.add_option(&format!(":sub-track-id={t}"));
+        }
+        let mut soft = self.wants_software_decoding(&req);
+        if !soft && self.settings.performance.hw_decoding == HwDecoding::Automatic && req.item.source.path().is_some() {
+            // A quick local parse tells us whether the file has subtitle
+            // tracks before decoding starts, so it never needs a restart.
+            // Subtitle files VLC will load from beside the video count too.
+            media.parse_blocking(ffi::parse::LOCAL, Duration::from_millis(1500));
+            soft = media.tracks().iter().any(|t| t.kind == "Subtitle")
+                || (self.settings.subtitles.autoload && req.item.source.path().is_some_and(has_sidecar_subtitles));
+            log::debug!("opening {} with software decoding: {soft}", req.item.source.display_name());
+        }
+        if soft && self.settings.performance.hw_decoding != HwDecoding::Disabled {
+            media.add_option(":codec=avcodec,all");
+            media.add_option(":avcodec-hw=none");
+        }
+        self.software_decoding = soft;
+        if self.current.as_ref().map(|c| &c.request.item.source) != Some(&req.item.source) {
+            self.wanted_audio = None;
+            self.wanted_subtitle = None;
+        }
+        self.restore = Restore {
+            subtitles_off: req.subtitle_track == Some(-1),
+            audio_delay_us: req.audio_delay_us,
+            subtitle_delay_us: req.subtitle_delay_us,
+            delays_applied: false,
+        };
         for (i, sub) in req.subtitles.iter().enumerate() {
             if i == 0 {
                 media.add_option(&format!(":sub-file={}", sub.display()));
@@ -637,6 +698,84 @@ impl Worker {
         self.current = Some(Current { request: req, _media: media });
         self.tracks_dirty = true;
         self.meta_dirty = true;
+    }
+
+    /// Software decoding when subtitles will be shown and the user left
+    /// hardware decoding on Automatic (or turned it off).
+    fn wants_software_decoding(&self, req: &OpenRequest) -> bool {
+        match self.settings.performance.hw_decoding {
+            HwDecoding::Disabled => true,
+            HwDecoding::VideoToolbox => false,
+            HwDecoding::Automatic => {
+                req.expect_subtitles || !req.subtitles.is_empty() || req.subtitle_track.is_some_and(|t| t >= 0)
+            }
+        }
+    }
+
+    /// Re-applies remembered delays and "subtitles off" once tracks exist,
+    /// and reopens a hardware-decoded item in software mode when a
+    /// subtitle track becomes active, so its text can be drawn.
+    fn after_tracks(&mut self) {
+        let st = self.status.read().clone();
+        if !st.state.is_active() {
+            return;
+        }
+        let s = self.s();
+        if !self.restore.delays_applied && st.state == PlayerState::Playing {
+            self.restore.delays_applied = true;
+            unsafe {
+                if self.restore.audio_delay_us != 0 {
+                    (self.api.libvlc_audio_set_delay)(s.mp, self.restore.audio_delay_us);
+                }
+                if self.restore.subtitle_delay_us != 0 {
+                    (self.api.libvlc_video_set_spu_delay)(s.mp, self.restore.subtitle_delay_us);
+                }
+            }
+        }
+        // Choices made while the file was opening apply once their tracks exist.
+        if let Some(w) = self.wanted_subtitle {
+            if st.subtitle_track == w {
+                self.wanted_subtitle = None;
+            } else if st.subtitle_tracks.iter().any(|t| t.id == w) {
+                unsafe { (self.api.libvlc_video_set_spu)(s.mp, w) };
+                self.tracks_dirty = true;
+                return;
+            }
+        }
+        if let Some(w) = self.wanted_audio {
+            if st.audio_track == w {
+                self.wanted_audio = None;
+            } else if st.audio_tracks.iter().any(|t| t.id == w) {
+                unsafe { (self.api.libvlc_audio_set_track)(s.mp, w) };
+                self.tracks_dirty = true;
+                return;
+            }
+        }
+        if self.restore.subtitles_off && st.subtitle_track >= 0 {
+            self.restore.subtitles_off = false;
+            unsafe { (self.api.libvlc_video_set_spu)(s.mp, -1) };
+            self.tracks_dirty = true;
+            return;
+        }
+        let automatic = self.settings.performance.hw_decoding == HwDecoding::Automatic;
+        if automatic
+            && !self.software_decoding
+            && st.subtitle_track >= 0
+            && st.has_video
+            && let Some(cur) = self.current.take()
+        {
+            let mut req = cur.request;
+            req.start_ms = Some(st.time_ms);
+            req.paused = st.state == PlayerState::Paused;
+            req.subtitle_track = Some(self.wanted_subtitle.unwrap_or(st.subtitle_track));
+            req.audio_track = Some(self.wanted_audio.unwrap_or(st.audio_track));
+            req.audio_delay_us = st.audio_delay_us;
+            req.subtitle_delay_us = st.subtitle_delay_us;
+            req.expect_subtitles = true;
+            log::debug!("subtitles turned on: reopening in software decoding at {} ms", st.time_ms);
+            unsafe { (self.api.libvlc_media_player_stop)(s.mp) };
+            self.open(req);
+        }
     }
 
     fn detach_media_events(&mut self) {
@@ -773,6 +912,9 @@ impl Worker {
             self.tracks_dirty = false;
             self.refresh_tracks(&s);
             self.emit(EngineEvent::TracksChanged);
+            self.after_tracks();
+        } else if !self.restore.delays_applied {
+            self.after_tracks();
         }
         let slow = self.last_slow_poll.elapsed() > Duration::from_secs(1);
         if self.meta_dirty || (slow && self.status.read().state == PlayerState::Playing) {
@@ -1082,6 +1224,22 @@ impl Worker {
             self.open(req);
         }
     }
+}
+
+/// Subtitle files next to a video whose name starts with the video's name,
+/// which VLC's autodetection would load.
+fn has_sidecar_subtitles(video: &std::path::Path) -> bool {
+    let (Some(dir), Some(stem)) = (video.parent(), video.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
+    else {
+        return false;
+    };
+    std::fs::read_dir(dir).is_ok_and(|rd| {
+        rd.flatten().any(|e| {
+            let p = e.path();
+            crate::domain::media::kind_for_path(&p) == crate::domain::media::MediaKind::Subtitle
+                && p.file_stem().is_some_and(|s| s.to_string_lossy().to_lowercase().starts_with(&stem))
+        })
+    })
 }
 
 /// The libvlc log file chosen in General > Diagnostics, if logging is on.

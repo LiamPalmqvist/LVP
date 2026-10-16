@@ -430,6 +430,44 @@ fn main() {
         harness.step();
         std::thread::sleep(std::time::Duration::from_millis(60));
     }
+    // --click X,Y: click at X,Y after setup, then let the UI settle.
+    if let Some((x, y)) = arg_value(&args, "--click").and_then(|v| {
+        let (a, b) = v.split_once(',')?;
+        Some((a.parse::<f32>().ok()?, b.parse::<f32>().ok()?))
+    }) {
+        let pos = egui::pos2(x, y);
+        harness.event(egui::Event::PointerMoved(pos));
+        harness.step();
+        for pressed in [true, false] {
+            harness.event(egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed,
+                modifiers: egui::Modifiers::NONE,
+            });
+            harness.step();
+        }
+        harness.event(egui::Event::PointerGone);
+        for _ in 0..steps {
+            harness.step();
+            std::thread::sleep(std::time::Duration::from_millis(60));
+        }
+    }
+    // --bench N: time N more frames back to back (CPU time of a UI frame).
+    if let Some(n) = arg_value(&args, "--bench").and_then(|v| v.parse::<u32>().ok()) {
+        let t = std::time::Instant::now();
+        for i in 0..n {
+            // Keep the UI busy as if the user were scrolling.
+            harness.event(egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(0.0, if i % 40 < 20 { -6.0 } else { 6.0 }),
+                modifiers: egui::Modifiers::NONE,
+            });
+            harness.step();
+        }
+        let per = t.elapsed().as_secs_f64() * 1000.0 / n as f64;
+        println!("frame: {per:.2} ms over {n} frames");
+    }
     let img = harness.render().expect("render");
     img.save(&out).expect("save");
     println!("{out} ({}x{})", img.width(), img.height());

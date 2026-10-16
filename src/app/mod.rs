@@ -539,15 +539,18 @@ impl App {
             .map(|p| self.sidecar_subtitles(p))
             .unwrap_or_default();
         self.ab_loop = AbLoop::default();
+        let expect_subtitles = !subtitles.is_empty() || item.meta.codecs.iter().any(|c| c.kind == "Subtitle");
         self.engine.send(EngineCommand::Open(Box::new(OpenRequest {
-            item: item.clone(),
             start_ms: resume,
             paused: !self.settings.playback.autoplay,
             subtitles,
+            audio_track: record.audio_track,
+            subtitle_track: record.subtitle_track,
+            audio_delay_us: record.audio_delay_us,
+            subtitle_delay_us: record.subtitle_delay_us,
+            expect_subtitles,
+            ..OpenRequest::new(item.clone())
         })));
-        if let Some(t) = record.audio_track {
-            self.engine.send(EngineCommand::SetAudioTrack(t));
-        }
         self.library.mark_played(&item, self.settings.privacy.save_recent && !self.remember_excluded(&item));
         self.request_meta(&item);
         self.playing_source = Some(item.source.clone());
@@ -836,12 +839,18 @@ impl App {
     }
 
     pub fn set_audio_delay(&mut self, us: i64) {
+        if let Some(src) = self.playing_source.clone() {
+            self.library.update_record(&src, |r| r.audio_delay_us = us);
+        }
         self.engine.send(EngineCommand::SetAudioDelay(us));
         self.status.audio_delay_us = us;
         self.show_osd(format!("Audio delay: {} ms", us / 1000));
     }
 
     pub fn set_subtitle_delay(&mut self, us: i64) {
+        if let Some(src) = self.playing_source.clone() {
+            self.library.update_record(&src, |r| r.subtitle_delay_us = us);
+        }
         self.engine.send(EngineCommand::SetSubtitleDelay(us));
         self.status.subtitle_delay_us = us;
         self.show_osd(format!("Subtitle delay: {} ms", us / 1000));

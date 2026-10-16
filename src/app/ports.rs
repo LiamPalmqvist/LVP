@@ -145,6 +145,31 @@ pub struct OpenRequest {
     pub start_ms: Option<i64>,
     pub paused: bool,
     pub subtitles: Vec<PathBuf>,
+    /// Track ids chosen last time for this file (-1 = subtitles off).
+    pub audio_track: Option<i32>,
+    pub subtitle_track: Option<i32>,
+    pub audio_delay_us: i64,
+    pub subtitle_delay_us: i64,
+    /// The file is known to carry subtitles. With hardware decoding set to
+    /// Automatic this opens it with software decoding, because VLC 3 cannot
+    /// draw subtitles onto hardware-decoded pictures in this output mode.
+    pub expect_subtitles: bool,
+}
+
+impl OpenRequest {
+    pub fn new(item: MediaItem) -> Self {
+        Self {
+            item,
+            start_ms: None,
+            paused: false,
+            subtitles: Vec::new(),
+            audio_track: None,
+            subtitle_track: None,
+            audio_delay_us: 0,
+            subtitle_delay_us: 0,
+            expect_subtitles: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
