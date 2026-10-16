@@ -192,7 +192,6 @@ fn paint_box(ui: &Ui, rect: Rect, focused: bool, hovered: bool) {
 /// `Scroll(±1)` so numeric boxes can step.
 pub enum BoxEvent {
     Commit(String),
-    Scroll(f32),
 }
 
 pub fn value_box(ui: &mut Ui, id: impl std::hash::Hash, display: &str, width: f32) -> Option<BoxEvent> {
@@ -243,12 +242,6 @@ pub fn value_box_in(
             out = Some(BoxEvent::Commit(buf));
         }
     }
-    if out.is_none() && !focused && (hovered || r.hovered()) {
-        let s = ui.input(|i| i.raw_scroll_delta.y);
-        if s.abs() > 0.5 {
-            out = Some(BoxEvent::Scroll(s.signum()));
-        }
-    }
     out
 }
 
@@ -259,13 +252,12 @@ pub fn parse_number(s: &str) -> Option<f64> {
 }
 
 /// A numeric value box: shows `fmt(value)`, accepts typed numbers (in the
-/// displayed unit, converted back with `parse`) and wheel steps.
+/// displayed unit, converted back with `parse`).
 pub fn number_box(
     ui: &mut Ui,
     id: impl std::hash::Hash,
     value: &mut f64,
     range: std::ops::RangeInclusive<f64>,
-    step: f64,
     fmt: impl Fn(f64) -> String,
     width: f32,
 ) -> bool {
@@ -280,12 +272,6 @@ pub fn number_box(
             }
             None => false,
         },
-        Some(BoxEvent::Scroll(d)) => {
-            let v = (*value + step * d as f64).clamp(*range.start(), *range.end());
-            let changed = v != *value;
-            *value = v;
-            changed
-        }
         None => false,
     }
 }
@@ -570,17 +556,6 @@ pub fn slider(ui: &mut Ui, value: &mut f64, range: std::ops::RangeInclusive<f64>
             if v != *value {
                 *value = v;
                 resp.mark_changed();
-            }
-        }
-        if resp.hovered() {
-            let d = ui.input(|i| i.raw_scroll_delta.y + i.raw_scroll_delta.x);
-            if d.abs() > 0.5 {
-                let step = if s.step > 0.0 { s.step } else { span / 100.0 };
-                let v = snap(*value + step * d.signum() as f64);
-                if v != *value {
-                    *value = v;
-                    resp.mark_changed();
-                }
             }
         }
     }

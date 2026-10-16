@@ -47,7 +47,7 @@ actions! {
         OpenNetwork = "Open network stream" ["Ctrl+N"],
         OpenCapture = "Open capture device" ["Ctrl+C"],
         ConvertSave = "Convert / save" ["Ctrl+R"],
-        Preferences = "Preferences" ["Ctrl+P"],
+        Preferences = "Preferences" ["Ctrl+,", "Ctrl+P"],
         MediaInfo = "Media information" ["Ctrl+I"],
         EffectsFilters = "Effects and filters" ["Ctrl+E"],
         KeyboardShortcuts = "Keyboard shortcuts" ["F1"],

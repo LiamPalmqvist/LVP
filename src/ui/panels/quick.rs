@@ -121,7 +121,7 @@ fn playback_tab(ui: &mut Ui, app: &mut App, st: &mut UiState) {
     });
     let mut rate = if app.status.rate > 0.0 { app.status.rate as f64 } else { 1.0 };
     let mut changed =
-        kit::row(ui, "Speed", 44.0, |ui| kit::number_box(ui, "speed", &mut rate, 0.25..=4.0, 0.05, format_rate, BOX_W));
+        kit::row(ui, "Speed", 44.0, |ui| kit::number_box(ui, "speed", &mut rate, 0.25..=4.0, format_rate, BOX_W));
     gap(ui, 8.0);
     let labels = [
         (0.25, "0.25"),
@@ -159,19 +159,10 @@ fn track_number(tracks: &[Track], current: i32) -> String {
 pub fn track_number_box(ui: &mut Ui, id: &str, tracks: &[Track], current: i32) -> Option<i32> {
     let real: Vec<&Track> = tracks.iter().filter(|t| t.id >= 0).collect();
     let shown = track_number(tracks, current);
-    let pos = real.iter().position(|t| t.id == current);
     match kit::value_box(ui, id, &shown, BOX_W) {
         Some(kit::BoxEvent::Commit(t)) => {
             let n = kit::parse_number(&t).map(|v| v as i64).unwrap_or(0);
             if n <= 0 { Some(-1) } else { real.get(n as usize - 1).map(|t| t.id) }
-        }
-        Some(kit::BoxEvent::Scroll(d)) if !real.is_empty() => {
-            let i = match pos {
-                Some(i) if d > 0.0 => (i + 1).min(real.len() - 1),
-                Some(i) => i.saturating_sub(1),
-                None => 0,
-            };
-            Some(real[i].id)
         }
         _ => None,
     }
@@ -189,7 +180,7 @@ pub fn language_box(ui: &mut Ui, id: &str, value: &str) -> Option<String> {
 pub fn delay_editor(ui: &mut Ui, id: &str, label: &str, us: i64) -> Option<i64> {
     let mut secs = us as f64 / 1_000_000.0;
     let mut changed = kit::row(ui, label, 56.0, |ui| {
-        kit::number_box(ui, id, &mut secs, -60.0..=60.0, 0.05, |v| format_delay((v * 1e6) as i64), BOX_W)
+        kit::number_box(ui, id, &mut secs, -60.0..=60.0, |v| format_delay((v * 1e6) as i64), BOX_W)
     });
     gap(ui, 5.0);
     let mut s = secs.clamp(-10.0, 10.0);
@@ -227,13 +218,13 @@ fn subtitles_tab(ui: &mut Ui, app: &mut App, st: &mut UiState) {
     let mut t: SubtitleTiming = app.subtitle_timing;
     let mut speed = t.speed as f64;
     let mut changed = kit::row(ui, "Subtitle Speed", 56.0, |ui| {
-        kit::number_box(ui, "sub-speed", &mut speed, 0.1..=10.0, 0.05, |v| format!("{v:.3} fps"), BOX_W)
+        kit::number_box(ui, "sub-speed", &mut speed, 0.1..=10.0, |v| format!("{v:.3} fps"), BOX_W)
     });
     gap(ui, 5.0);
     changed |= kit::slider(ui, &mut speed, 0.1..=10.0, &kit::Sl::default().step(0.05).reset(1.0)).changed();
     let mut factor = t.duration_factor as f64;
     changed |= kit::row(ui, "Subtitle Duration Factor", 56.0, |ui| {
-        kit::number_box(ui, "sub-factor", &mut factor, 0.0..=20.0, 0.1, |v| format!("{v:.3}"), BOX_W)
+        kit::number_box(ui, "sub-factor", &mut factor, 0.0..=20.0, |v| format!("{v:.3}"), BOX_W)
     });
     gap(ui, 5.0);
     changed |= kit::slider(ui, &mut factor, 0.0..=20.0, &kit::Sl::default().step(0.1).reset(0.0)).changed();

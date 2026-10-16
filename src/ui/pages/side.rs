@@ -155,11 +155,6 @@ fn rows(ui: &mut Ui, app: &mut App, st: &mut UiState, m: &PageModel) {
                         if flat {
                             st.library.selected = Some(ti);
                         }
-                        if item.is_none() {
-                            view::activate(app, st, sec, ti);
-                        }
-                    }
-                    if resp.double_clicked() && item.is_some() && settled {
                         view::activate(app, st, sec, ti);
                     }
                     view::tile_menu(&resp, app, st, m, sec, ti);

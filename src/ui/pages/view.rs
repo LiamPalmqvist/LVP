@@ -211,25 +211,16 @@ fn tile(
     if let Some(item) = item {
         want_meta(app, st, item);
     }
-    let mut play_hit = false;
     if list {
         cards::list_row(ui, app, rect, t, item, hovered, selected, true);
-        let th = Rect::from_min_size(rect.min, vec2(32.0, rect.height()));
-        play_hit = item.is_some() && ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| th.contains(p));
     } else {
-        let (_, badge) = cards::grid_card(ui, app, rect, sec.shape, t, item, hovered, selected);
-        if let Some(b) = badge {
-            play_hit = ui.input(|i| i.pointer.interact_pos()).is_some_and(|p| b.contains(p));
-        }
+        cards::grid_card(ui, app, rect, sec.shape, t, item, hovered, selected);
     }
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
     let settled = st.library.settled();
+    // One click anywhere on a tile opens or plays it.
     if resp.clicked() && settled {
         st.library.selected = Some(ti);
-        if item.is_none() || play_hit {
-            activate(app, st, sec, ti);
-        }
-    } else if resp.double_clicked() && item.is_some() && settled {
         activate(app, st, sec, ti);
     }
     if reorder.is_some() {
@@ -364,16 +355,14 @@ fn section_tile(
     if let Some(item) = item {
         want_meta(app, st, item);
     }
-    let badge = if list {
+    if list {
         cards::list_row(ui, app, cell, t, item, resp.hovered(), false, true);
-        item.map(|_| Rect::from_min_size(cell.min, vec2(32.0, cell.height())))
     } else {
-        cards::grid_card(ui, app, cell, sec.shape, t, item, resp.hovered(), false).1
-    };
+        cards::grid_card(ui, app, cell, sec.shape, t, item, resp.hovered(), false);
+    }
     let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-    let on_badge = badge.is_some_and(|b| ui.input(|i| i.pointer.interact_pos()).is_some_and(|q| b.contains(q)));
     let settled = st.library.settled();
-    if settled && ((resp.clicked() && (item.is_none() || on_badge)) || (resp.double_clicked() && item.is_some())) {
+    if settled && resp.clicked() {
         activate(app, st, sec, ti);
     }
     tile_menu(&resp, app, st, m, sec, ti);

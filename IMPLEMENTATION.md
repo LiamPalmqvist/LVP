@@ -294,3 +294,4 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 | 2026-10-13 | Engine: libvlc 3 from VLC.app, not mpv | The design's effect panels map 1:1 to VLC modules; libvlc brings VLC's discovery, casting, recording and transcoding |
 | 2026-10-13 | UI: eframe/egui 0.33 with wgpu | Custom-drawn design kit; native wgpu texture for video. 0.33 is the newest that builds on Rust 1.90 |
 | 2026-10-13 | Video via vmem callbacks, geometry in our renderer | Works with any GPU backend; aspect/crop/zoom stay consistent |
+| 2026-10-16 | Software decoding while subtitles are shown (hardware decoding on Automatic) | VLC 3 cannot draw subtitles onto VideoToolbox pictures through vmem; files with subtitles open in software mode and turning subtitles on reopens in place |

@@ -301,6 +301,55 @@ pub mod font {
 }
 
 /// Loads Inter (Light, Regular, Medium, SemiBold, Bold) and DM Mono.
+/// System fonts that cover scripts Inter lacks (Japanese, Chinese, Korean
+/// and everything else), as (name, regular-weight path, bold-weight path),
+/// in fallback order. Missing files are skipped.
+fn system_fallbacks() -> Vec<(&'static str, &'static str, &'static str)> {
+    if cfg!(target_os = "macos") {
+        vec![
+            // Hiragino Sans: Japanese kana and kanji, also good for Chinese.
+            (
+                "jp",
+                "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc",
+                "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc",
+            ),
+            (
+                "kr",
+                "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+                "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
+            ),
+            ("zh", "/System/Library/Fonts/Hiragino Sans GB.ttc", "/System/Library/Fonts/Hiragino Sans GB.ttc"),
+            (
+                "uni",
+                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+                "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            ),
+        ]
+    } else if cfg!(windows) {
+        vec![
+            ("jp", "C:\\Windows\\Fonts\\YuGothR.ttc", "C:\\Windows\\Fonts\\YuGothB.ttc"),
+            ("kr", "C:\\Windows\\Fonts\\malgun.ttf", "C:\\Windows\\Fonts\\malgunbd.ttf"),
+            ("zh", "C:\\Windows\\Fonts\\msyh.ttc", "C:\\Windows\\Fonts\\msyhbd.ttc"),
+            ("uni", "C:\\Windows\\Fonts\\seguisym.ttf", "C:\\Windows\\Fonts\\seguisym.ttf"),
+        ]
+    } else {
+        vec![
+            (
+                "cjk",
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+            ),
+            (
+                "uni",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            ),
+        ]
+    }
+}
+
+/// Loads Inter (Light, Regular, Medium, SemiBold, Bold) and DM Mono, with
+/// system fonts behind them for Japanese, Chinese, Korean and other scripts.
 pub fn install_fonts(ctx: &egui::Context) {
     use std::sync::Arc;
     let mut fonts = egui::FontDefinitions::default();
@@ -315,21 +364,46 @@ pub fn install_fonts(ctx: &egui::Context) {
     for (name, bytes) in data {
         fonts.font_data.insert(name.into(), Arc::new(egui::FontData::from_static(bytes)));
     }
-    // Keep egui's defaults behind Inter for symbols and CJK fallback.
-    let fallback: Vec<String> = fonts.families.get(&FontFamily::Proportional).cloned().unwrap_or_default();
-    let family = |main: &str| {
+    // System fallbacks, regular and bold weights. A file shared by both
+    // weights is loaded once.
+    let mut regular_fallbacks = Vec::new();
+    let mut bold_fallbacks = Vec::new();
+    let mut loaded: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
+    let mut load = |key: String, path: &'static str, fonts: &mut egui::FontDefinitions| -> Option<String> {
+        if let Some(k) = loaded.get(path) {
+            return Some(k.clone());
+        }
+        let bytes = std::fs::read(path).ok()?;
+        // Hiragino and friends sit a little high next to Inter.
+        let tweak = egui::FontTweak { y_offset_factor: 0.12, ..Default::default() };
+        fonts.font_data.insert(key.clone(), Arc::new(egui::FontData::from_owned(bytes).tweak(tweak)));
+        loaded.insert(path, key.clone());
+        Some(key)
+    };
+    for (name, regular, bold) in system_fallbacks() {
+        if let Some(k) = load(format!("sys-{name}"), regular, &mut fonts) {
+            regular_fallbacks.push(k);
+        }
+        if let Some(k) = load(format!("sys-{name}-bold"), bold, &mut fonts) {
+            bold_fallbacks.push(k);
+        }
+    }
+    // egui's own defaults stay last, for emoji and symbols.
+    let defaults: Vec<String> = fonts.families.get(&FontFamily::Proportional).cloned().unwrap_or_default();
+    let family = |main: &str, bold: bool| {
         let mut v = vec![main.to_string()];
-        v.extend(fallback.iter().cloned());
+        v.extend(if bold { bold_fallbacks.iter() } else { regular_fallbacks.iter() }.cloned());
+        v.extend(defaults.iter().cloned());
         v
     };
-    fonts.families.insert(FontFamily::Proportional, family("Inter-Regular"));
-    fonts.families.insert(FontFamily::Name("light".into()), family("Inter-Light"));
-    fonts.families.insert(FontFamily::Name("medium".into()), family("Inter-Medium"));
-    fonts.families.insert(FontFamily::Name("semibold".into()), family("Inter-SemiBold"));
-    fonts.families.insert(FontFamily::Name("bold".into()), family("Inter-Bold"));
-    let mono_fallback = fonts.families.get(&FontFamily::Monospace).cloned().unwrap_or_default();
+    fonts.families.insert(FontFamily::Proportional, family("Inter-Regular", false));
+    fonts.families.insert(FontFamily::Name("light".into()), family("Inter-Light", false));
+    fonts.families.insert(FontFamily::Name("medium".into()), family("Inter-Medium", false));
+    fonts.families.insert(FontFamily::Name("semibold".into()), family("Inter-SemiBold", true));
+    fonts.families.insert(FontFamily::Name("bold".into()), family("Inter-Bold", true));
     let mut mono = vec!["DMMono".to_string()];
-    mono.extend(mono_fallback);
+    mono.extend(regular_fallbacks.iter().cloned());
+    mono.extend(fonts.families.get(&FontFamily::Monospace).cloned().unwrap_or_default());
     fonts.families.insert(FontFamily::Monospace, mono);
     ctx.set_fonts(fonts);
 }

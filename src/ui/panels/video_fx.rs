@@ -111,7 +111,6 @@ fn defaults(ui: &mut Ui, app: &mut App, st: &mut UiState) {
     let r = kit::row(ui, "Rotate", 48.0, |ui| kit::value_box(ui, "rotate", &format!("{deg} deg"), 140.0));
     let new = match r {
         Some(kit::BoxEvent::Commit(t)) => kit::parse_number(&t).map(|v| ((v / 90.0).round() as i32) * 90),
-        Some(kit::BoxEvent::Scroll(d)) => Some(deg + if d > 0.0 { 90 } else { -90 }),
         None => None,
     };
     if let Some(d) = new
@@ -281,7 +280,6 @@ fn crop_field(ui: &mut Ui, id: &str, label: &str, value: &mut u32) -> bool {
     );
     let new = match ev {
         Some(kit::BoxEvent::Commit(t)) => kit::parse_number(&t).map(|v| v.max(0.0).round() as u32),
-        Some(kit::BoxEvent::Scroll(d)) => Some(if d > 0.0 { *value + 1 } else { value.saturating_sub(1) }),
         None => None,
     };
     match new {

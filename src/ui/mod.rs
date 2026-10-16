@@ -456,6 +456,10 @@ impl eframe::App for NotVlcApp {
         self.frame(ctx, frame.wgpu_render_state());
     }
 
+    fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        native_scrolling(&mut raw_input.events);
+    }
+
     fn on_exit(&mut self) {
         self.app.shutdown();
     }
@@ -542,4 +546,81 @@ pub fn key_name(k: Key) -> Option<&'static str> {
         Backtick => "`",
         _ => return None,
     })
+}
+
+/// Points per mouse-wheel line and page, close to macOS's own feel.
+const LINE_POINTS: f32 = 36.0;
+const PAGE_POINTS: f32 = 480.0;
+
+/// Makes scrolling track the input 1:1, like a native macOS app.
+///
+/// egui applies small trackpad deltas immediately but eases anything of 8
+/// points or more over a tenth of a second, which makes fast swipes and
+/// every mouse-wheel notch lag behind. Splitting large deltas into steps
+/// under that threshold keeps them immediate; line and page units become
+/// points first.
+pub fn native_scrolling(events: &mut Vec<egui::Event>) {
+    if !events.iter().any(|e| matches!(e, egui::Event::MouseWheel { .. })) {
+        return;
+    }
+    let mut out = Vec::with_capacity(events.len());
+    for e in events.drain(..) {
+        match e {
+            egui::Event::MouseWheel { unit, delta, modifiers } => {
+                let delta = match unit {
+                    egui::MouseWheelUnit::Point => delta,
+                    egui::MouseWheelUnit::Line => delta * LINE_POINTS,
+                    egui::MouseWheelUnit::Page => delta * PAGE_POINTS,
+                };
+                let steps = (delta.length() / 7.5).ceil().max(1.0) as usize;
+                let part = delta / steps as f32;
+                for _ in 0..steps {
+                    out.push(egui::Event::MouseWheel { unit: egui::MouseWheelUnit::Point, delta: part, modifiers });
+                }
+            }
+            other => out.push(other),
+        }
+    }
+    *events = out;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wheel(unit: egui::MouseWheelUnit, y: f32) -> egui::Event {
+        egui::Event::MouseWheel { unit, delta: egui::vec2(0.0, y), modifiers: egui::Modifiers::NONE }
+    }
+
+    fn total(events: &[egui::Event]) -> (f32, f32) {
+        let mut sum = 0.0;
+        let mut max: f32 = 0.0;
+        for e in events {
+            if let egui::Event::MouseWheel { unit, delta, .. } = e {
+                assert_eq!(*unit, egui::MouseWheelUnit::Point);
+                sum += delta.y;
+                max = max.max(delta.length());
+            }
+        }
+        (sum, max)
+    }
+
+    #[test]
+    fn large_deltas_split_below_the_easing_threshold() {
+        let mut ev = vec![wheel(egui::MouseWheelUnit::Point, 60.0), egui::Event::PointerGone];
+        native_scrolling(&mut ev);
+        let (sum, max) = total(&ev);
+        assert!((sum - 60.0).abs() < 1e-3);
+        assert!(max < 8.0);
+        assert!(ev.iter().any(|e| matches!(e, egui::Event::PointerGone)));
+    }
+
+    #[test]
+    fn wheel_lines_become_points() {
+        let mut ev = vec![wheel(egui::MouseWheelUnit::Line, -1.0)];
+        native_scrolling(&mut ev);
+        let (sum, max) = total(&ev);
+        assert!((sum + LINE_POINTS).abs() < 1e-3);
+        assert!(max < 8.0);
+    }
 }

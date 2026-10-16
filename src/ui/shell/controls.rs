@@ -625,20 +625,36 @@ fn paint_wedge(ui: &Ui, w: Rect, frac: f32, p: &Palette) {
         }
         stops[3].1
     };
-    let mut mesh = Mesh::default();
+    // A raw mesh is not anti-aliased, so every edge gets a one-pixel band
+    // that fades to transparent, the same feathering egui gives shapes.
+    let feather = 1.0 / ui.ctx().pixels_per_point();
+    let clear = Color32::TRANSPARENT;
     let steps = 24;
     let x0 = w.min.x + 1.5;
     let span = w.width() - 3.0;
+    let mut mesh = Mesh::default();
+    let column = |mesh: &mut Mesh, x: f32, top: f32, bottom: f32, c: Color32, edge_c: Color32| {
+        for (y, col) in [(top - feather, edge_c), (top, c), (bottom, c), (bottom + feather, edge_c)] {
+            mesh.vertices.push(Vertex { pos: pos2(x, y), uv: WHITE_UV, color: col });
+        }
+    };
+    // Faded column just left of the start, then the coloured columns, then a
+    // faded column just right of the level.
+    let (t0, b0) = edge(0.0, 1.5);
+    column(&mut mesh, x0 - feather, t0, b0, clear, clear);
     for i in 0..=steps {
         let t = frac * i as f32 / steps as f32;
         let (top, bottom) = edge(t, 1.5);
-        let c = color_at(t);
-        let x = x0 + span * t;
-        mesh.vertices.push(Vertex { pos: pos2(x, top), uv: WHITE_UV, color: c });
-        mesh.vertices.push(Vertex { pos: pos2(x, bottom), uv: WHITE_UV, color: c });
-        if i > 0 {
-            let b = (i as u32 - 1) * 2;
-            mesh.indices.extend_from_slice(&[b, b + 1, b + 2, b + 1, b + 3, b + 2]);
+        column(&mut mesh, x0 + span * t, top, bottom, color_at(t), clear);
+    }
+    let (te, be) = edge(frac, 1.5);
+    column(&mut mesh, x0 + span * frac + feather, te, be, clear, clear);
+    let columns = (steps + 3) as u32;
+    for c in 0..columns - 1 {
+        let a = c * 4;
+        let b = a + 4;
+        for k in 0..3 {
+            mesh.indices.extend_from_slice(&[a + k, a + k + 1, b + k, a + k + 1, b + k + 1, b + k]);
         }
     }
     ui.painter().add(Shape::mesh(mesh));

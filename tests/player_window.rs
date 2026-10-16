@@ -66,3 +66,11 @@ fn shortcuts_do_not_reach_the_player_under_a_modal() {
     press(&mut h, Key::Escape, Modifiers::NONE);
     assert!(!h.state().st.settings.open, "Esc closes settings first");
 }
+
+#[test]
+fn command_comma_opens_settings() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(dir.path());
+    press(&mut h, Key::Comma, Modifiers::COMMAND);
+    assert!(h.state().st.settings.open, "Cmd+, opens settings");
+}

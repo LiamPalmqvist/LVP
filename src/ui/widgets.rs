@@ -240,17 +240,6 @@ pub fn slider(ui: &mut Ui, value: &mut f64, range: std::ops::RangeInclusive<f64>
             resp.mark_changed();
         }
     }
-    if resp.hovered() && !style.disabled {
-        let scroll = ui.input(|i| i.smooth_scroll_delta.y + i.smooth_scroll_delta.x);
-        if scroll != 0.0 {
-            let step = if style.step > 0.0 { style.step } else { (hi - lo) / 100.0 };
-            let v = (*value + step * scroll.signum() as f64).clamp(lo, hi);
-            if v != *value {
-                *value = v;
-                resp.mark_changed();
-            }
-        }
-    }
     let painter = ui.painter();
     let r = CornerRadius::same((style.height / 4.0).min(8.0) as u8);
     painter.rect_filled(rect, r, p.bg_b2);

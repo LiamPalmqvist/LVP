@@ -43,6 +43,8 @@ pub fn controls_visible(app: &App, st: &UiState, ctx: &egui::Context) -> bool {
 }
 
 pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, res: &mut Resources) {
+    // Back in the player: a mini player closed earlier may show again later.
+    st.music.mini_closed = None;
     let p = pal(ui.ctx());
     let full = ui.max_rect();
     let show_chrome = !st.hide_ui && !st.fullscreen && !st.pip;

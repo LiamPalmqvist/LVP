@@ -417,17 +417,6 @@ pub fn slider(ui: &mut Ui, v: &mut f32, range: RangeInclusive<f32>, spec: &Slide
             resp.mark_changed();
         }
     }
-    if resp.hovered() {
-        let scroll = ui.input(|i| i.raw_scroll_delta.y + i.raw_scroll_delta.x);
-        if scroll.abs() > 0.5 {
-            let step = if spec.step > 0.0 { spec.step } else { span / 100.0 };
-            let nv = snap(*v + step * scroll.signum());
-            if nv != *v {
-                *v = nv;
-                resp.mark_changed();
-            }
-        }
-    }
     let painter = ui.painter();
     painter.rect_filled(track, CornerRadius::same(6), p.bg_b2);
     let x = x_of(*v);
@@ -533,7 +522,7 @@ pub fn number_field(
     width: f32,
 ) -> bool {
     let p = pal(ui.ctx());
-    let (rect, resp) = ui.allocate_exact_size(vec2(width, 36.0), Sense::hover());
+    let (rect, _) = ui.allocate_exact_size(vec2(width, 36.0), Sense::hover());
     let id = ui.id().with(("num", rect.min.y as i32, rect.min.x as i32));
     let buf_id = id.with("buf");
     let focused = ui.memory(|m| m.has_focus(id));
@@ -576,17 +565,6 @@ pub fn number_field(
             font::regular(14.0),
             p.fg_a2,
         );
-    }
-    if (resp.hovered() || er.hovered()) && !er.has_focus() {
-        let scroll = ui.input(|i| i.raw_scroll_delta.y);
-        if scroll.abs() > 0.5 {
-            let step = 10f64.powi(-(decimals as i32));
-            let n = (*v + step * scroll.signum() as f64).clamp(*range.start(), *range.end());
-            if n != *v {
-                *v = n;
-                changed = true;
-            }
-        }
     }
     changed
 }

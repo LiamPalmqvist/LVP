@@ -298,13 +298,6 @@ fn startup_volume(ui: &mut Ui, remember: &mut bool, level: &mut i32) {
     } else {
         ui.data_mut(|d| d.remove::<String>(buf_id));
     }
-    if er.hovered() || b.hovered() {
-        let scroll = ui.input(|i| i.raw_scroll_delta.y);
-        if scroll.abs() > 0.5 {
-            *level = (*level + 5 * scroll.signum() as i32).clamp(0, 300);
-            *remember = false;
-        }
-    }
 }
 
 /// "Open Equalizer" bar and, when open, the preamp and ten band sliders.
@@ -347,16 +340,7 @@ fn equalizer(ui: &mut Ui, eq: &mut EqualizerSettings, open: &mut bool) {
         if r.changed() && i > 0 {
             changed_band = true;
         }
-        let r = r.on_hover_text(format!("{label}: {:+.1} dB. Double-click to reset.", *value));
-        if r.hovered() {
-            let scroll = ui.input(|inp| inp.raw_scroll_delta.y);
-            if scroll.abs() > 0.5 {
-                *value = (*value + 0.5 * scroll.signum()).clamp(EQ_RANGE.0, EQ_RANGE.1);
-                if i > 0 {
-                    changed_band = true;
-                }
-            }
-        }
+        r.on_hover_text(format!("{label}: {:+.1} dB. Double-click to reset.", *value));
         let lc = if i == 0 { p.fg1 } else { p.fg_a3 };
         ui.painter().text(
             pos2(x + col_w / 2.0, slider_rect.max.y + 33.0),

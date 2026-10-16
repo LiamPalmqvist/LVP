@@ -444,10 +444,9 @@ fn queue_rows(ui: &mut Ui, w: f32, app: &mut App, st: &mut UiState, p: &Palette)
             fg,
             (w - 42.0 - dur_w - 14.0).max(0.0),
         );
-        if resp.double_clicked() {
+        if resp.clicked() {
+            st.music.mini_selected = Some(i);
             play = Some(i);
-        } else if resp.clicked() {
-            st.music.mini_selected = if selected { None } else { Some(i) };
         }
     }
     // Drag and drop by the handle: an insertion line follows the pointer.

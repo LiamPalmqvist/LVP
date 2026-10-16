@@ -158,7 +158,7 @@ fn band(ui: &mut Ui, id: impl std::hash::Hash + Copy, label: &str, value: &mut f
     let mut v = *value as f64;
     let range = EQ_RANGE.0 as f64..=EQ_RANGE.1 as f64;
     let mut changed =
-        kit::row(ui, label, 56.0, |ui| kit::number_box(ui, id, &mut v, range.clone(), 0.5, |x| db(x as f32), 140.0));
+        kit::row(ui, label, 56.0, |ui| kit::number_box(ui, id, &mut v, range.clone(), |x| db(x as f32), 140.0));
     changed |= kit::slider(ui, &mut v, range, &Sl::default().step(0.1).reset(0.0)).changed();
     ui.add_space(10.0);
     if changed {

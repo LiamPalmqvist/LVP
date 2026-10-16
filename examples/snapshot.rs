@@ -67,11 +67,16 @@ fn demo_files(home: &Path) -> (Vec<PathBuf>, Vec<PathBuf>) {
     }
     touch(&home.join("Videos/Movies/DON'T BLINK.mp4"));
     touch(&home.join("Videos/Anime/Frieren/Frieren_01.mkv"));
-    let songs: Vec<PathBuf> =
-        ["untangle - juxtopposed.mp3", "moonlight - juxtopposed.mp3", "black bird - juxtopposed.mp3"]
-            .iter()
-            .map(|s| home.join("Music/juxtopposed").join(s))
-            .collect();
+    let songs: Vec<PathBuf> = [
+        "untangle - juxtopposed.mp3",
+        "moonlight - juxtopposed.mp3",
+        "black bird - juxtopposed.mp3",
+        "夜に駆ける - YOASOBI.mp3",
+        "밤양갱 - 비비.mp3",
+    ]
+    .iter()
+    .map(|s| home.join("Music/juxtopposed").join(s))
+    .collect();
     for s in &songs {
         touch(s);
     }
