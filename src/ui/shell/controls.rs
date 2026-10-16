@@ -202,7 +202,7 @@ fn draw_item(ui: &mut Ui, item: ToolbarItem, r: Rect, app: &mut App, st: &mut Ui
         }
         QuickSettings => {
             let on = matches!(st.panel, Some(PlayerPanel::QuickSettings(_)));
-            if button(ui, r, "quick", Icon::Settings, on, "Settings") {
+            if button(ui, r, "quick", Icon::PlaybackSettings, on, "Settings") {
                 let tab = match st.panel {
                     Some(PlayerPanel::QuickSettings(t)) => t,
                     _ => 0,

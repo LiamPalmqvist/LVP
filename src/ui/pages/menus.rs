@@ -57,7 +57,7 @@ pub fn row(ui: &mut Ui, icon: Option<Icon>, label: &str, selected: bool, chevron
     if chevron {
         widgets::paint_icon(ui, right, Icon::ChevronRight, p.fg_a3);
     } else if selected {
-        widgets::paint_icon(ui, right, Icon::Check, p.fg_a1);
+        widgets::paint_icon(ui, right, Icon::CheckActive, p.fg_a1);
     }
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

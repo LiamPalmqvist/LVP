@@ -52,10 +52,10 @@ fn rasterise(icon: Icon, px: u32, colors: IconColors) -> Option<egui::ColorImage
     let mut svg = icon.svg().replace("rgb(143,143,143)", &css(colors.fg));
     svg = svg.replace("rgb(211,121,24)", &css(colors.accent));
     svg = svg.replace("rgb(171,99,20)", &css(colors.accent_dim));
-    // Black fills in the source are cut-outs (the hole in the gear), except
-    // in "more", where one dot was left black by an instance override.
-    let black = if icon == Icon::More { css(colors.fg) } else { "none".to_string() };
-    svg = svg.replace("fill=\"rgb(0,0,0)\"", &format!("fill=\"{black}\""));
+    // Black in the source marks parts the design recolours per instance
+    // (the third dot of "more", the strokes of "add" and "edit"); they take
+    // the foreground colour.
+    svg = svg.replace("fill=\"rgb(0,0,0)\"", &format!("fill=\"{}\"", css(colors.fg)));
     if colors.fg.a() != 255 {
         // Fold the colour's alpha into the opacity of the whole icon.
         svg = svg.replacen("<svg ", &format!("<svg opacity=\"{:.3}\" ", colors.fg.a() as f32 / 255.0), 1);

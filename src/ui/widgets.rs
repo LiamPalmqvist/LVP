@@ -772,7 +772,7 @@ pub fn menu_row(ui: &mut Ui, icon_: Option<Icon>, label: &str, right: &str, sele
         paint_icon(
             ui,
             Rect::from_center_size(pos2(rect.max.x - 18.0, rect.center().y), Vec2::splat(20.0)),
-            Icon::Check,
+            Icon::CheckActive,
             p.accent,
         );
     }
