@@ -71,7 +71,13 @@ fn main() -> eframe::Result {
     app.set_system_hooks(Arc::new(notvlc::infra::platform::MacHooks::new()));
     app.set_inbox(inbox_rx);
 
-    let size = app.settings.interface.window_size.unwrap_or([1280.0, 800.0]);
+    let size = app
+        .settings
+        .interface
+        .window_size
+        .filter(|_| app.settings.interface.remember_window)
+        .unwrap_or([1280.0, 800.0]);
+    let remember = app.settings.interface.remember_window;
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("VLC Media Player")
         .with_app_id("org.notvlc.NotVLC")
@@ -79,6 +85,9 @@ fn main() -> eframe::Result {
         .with_min_inner_size([640.0, 400.0])
         .with_decorations(false)
         .with_transparent(false);
+    if remember && let Some([x, y]) = app.settings.interface.window_pos {
+        viewport = viewport.with_position([x, y]);
+    }
     if let Some(icon) = window_icon() {
         viewport = viewport.with_icon(Arc::new(icon));
     }

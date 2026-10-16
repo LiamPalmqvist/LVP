@@ -39,6 +39,19 @@ pub struct NotVlcApp {
     pub res: Resources,
     palette_key: Option<(Theme, Accent, bool)>,
     last_title: String,
+    window: WindowTracker,
+}
+
+/// Window-level behaviour driven by Interface settings.
+#[derive(Default)]
+struct WindowTracker {
+    started: bool,
+    last_video_size: Option<[u32; 2]>,
+    resized_once: bool,
+    was_minimized: bool,
+    paused_for_minimize: bool,
+    last_state: Option<crate::app::ports::PlayerState>,
+    last_source: Option<String>,
 }
 
 impl NotVlcApp {
@@ -56,6 +69,7 @@ impl NotVlcApp {
             res: Resources { video_tex: video::VideoTexture::new(), video_frame: None },
             palette_key: None,
             last_title: String::new(),
+            window: WindowTracker::default(),
         };
         if !open.is_empty() {
             me.app.open_paths(open);
@@ -90,6 +104,7 @@ impl NotVlcApp {
         }
         self.handle_drops(ctx);
         self.handle_keys(ctx);
+        self.window_rules(ctx);
         let p = widgets::pal(ctx);
 
         let chrome =
@@ -304,6 +319,98 @@ impl NotVlcApp {
                 }
             }
             UiCommand::Quit => ctx.send_viewport_cmd(ViewportCommand::Close),
+        }
+    }
+
+    /// Interface settings that act on the window: start-up state, size
+    /// memory, fit to video, minimise and focus rules, and requests from
+    /// other launches.
+    fn window_rules(&mut self, ctx: &egui::Context) {
+        use crate::app::ports::PlayerState;
+        use crate::domain::settings::{BringToFront, ResizeToVideo};
+        let ui_set = self.app.settings.interface.clone();
+        if !self.window.started {
+            self.window.started = true;
+            if ui_set.always_on_top {
+                self.st.always_on_top = true;
+                ctx.send_viewport_cmd(ViewportCommand::WindowLevel(egui::WindowLevel::AlwaysOnTop));
+            }
+            if ui_set.start_minimized {
+                ctx.send_viewport_cmd(ViewportCommand::Minimized(true));
+            }
+            if ui_set.start_compact && !self.st.pip {
+                self.toggle_pip(ctx);
+            }
+        }
+        // Remember the window's size and position.
+        let (inner, outer, minimized, fullscreen) = ctx.input(|i| {
+            let v = i.viewport();
+            (v.inner_rect, v.outer_rect, v.minimized.unwrap_or(false), v.fullscreen.unwrap_or(false))
+        });
+        if ui_set.remember_window && !fullscreen && !self.st.pip && !minimized {
+            let size = inner.map(|r| [r.width(), r.height()]);
+            let pos = outer.map(|r| [r.min.x, r.min.y]);
+            if size.is_some() && (size != ui_set.window_size || pos != ui_set.window_pos) {
+                self.app.settings.interface.window_size = size;
+                self.app.settings.interface.window_pos = pos;
+                self.app.mark_settings_dirty();
+            }
+        }
+        // Pause when minimised, resume when restored.
+        self.app.system.window_minimized = minimized;
+        if minimized != self.window.was_minimized {
+            self.window.was_minimized = minimized;
+            if minimized && ui_set.pause_when_minimized && self.app.is_playing() && self.app.status.has_video {
+                self.app.pause();
+                self.window.paused_for_minimize = true;
+            } else if !minimized && self.window.paused_for_minimize {
+                self.window.paused_for_minimize = false;
+                self.app.play();
+            }
+        }
+        // Fit the window to a new video.
+        let size = self.res.video_frame.map(|(_, s)| s);
+        if size.is_some() && size != self.window.last_video_size && !self.st.fullscreen && !self.st.pip {
+            let fit = match ui_set.resize_to_video {
+                ResizeToVideo::Never => false,
+                ResizeToVideo::Always => true,
+                ResizeToVideo::FirstVideo => !self.window.resized_once,
+            };
+            if fit && let Some([w, h]) = size {
+                let monitor = ctx.input(|i| i.viewport().monitor_size).unwrap_or(egui::vec2(1920.0, 1080.0));
+                let bar = shell::controls::height(&self.app) + shell::titlebar::HEIGHT;
+                let (sar_n, sar_d) = self.app.status.video_sar;
+                let w = w as f32 * if sar_d > 0 { sar_n as f32 / sar_d as f32 } else { 1.0 };
+                let k = ((monitor.x * 0.9) / w).min((monitor.y * 0.85 - bar) / h as f32).min(1.0);
+                ctx.send_viewport_cmd(ViewportCommand::InnerSize(egui::vec2(w * k, h as f32 * k + bar)));
+                self.window.resized_once = true;
+            }
+        }
+        self.window.last_video_size = size;
+        // Bring the window forward when a new item starts.
+        let state = self.app.status.state;
+        let source = self.app.current_source().map(|s| s.mrl());
+        if state == PlayerState::Playing
+            && (self.window.last_state != Some(PlayerState::Playing) || source != self.window.last_source)
+        {
+            let raise = match ui_set.bring_to_front {
+                BringToFront::Never => false,
+                BringToFront::Video => self.app.status.has_video,
+                BringToFront::Always => true,
+            };
+            if raise && source != self.window.last_source {
+                ctx.send_viewport_cmd(ViewportCommand::Focus);
+            }
+        }
+        self.window.last_state = Some(state);
+        self.window.last_source = source;
+        // Requests from another launch or from Finder.
+        if std::mem::take(&mut self.app.raise_window) {
+            ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+            ctx.send_viewport_cmd(ViewportCommand::Focus);
+        }
+        if std::mem::take(&mut self.app.show_player) {
+            self.st.view = View::Player;
         }
     }
 

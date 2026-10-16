@@ -70,7 +70,8 @@ fn item_text(item: ToolbarItem, app: &App) -> String {
 /// popovers can anchor above them.
 pub fn show(ui: &mut Ui, rect: Rect, app: &mut App, st: &mut UiState, overlay: bool) {
     let p = pal(ui.ctx());
-    let fill = if overlay { crate::ui::theme::with_alpha(p.bg_a4, 0.93) } else { p.bg_a4 };
+    let alpha = if st.fullscreen { 0.93 * app.settings.interface.fs_controls_opacity.clamp(0.1, 1.0) } else { 0.93 };
+    let fill = if overlay { crate::ui::theme::with_alpha(p.bg_a4, alpha) } else { p.bg_a4 };
     ui.painter().rect_filled(rect, 0, fill);
     // Swallow clicks so they don't reach the video below.
     ui.interact(rect, ui.id().with("controls-bg"), Sense::click());
