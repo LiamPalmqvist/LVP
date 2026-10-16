@@ -74,3 +74,16 @@ fn command_comma_opens_settings() {
     press(&mut h, Key::Comma, Modifiers::COMMAND);
     assert!(h.state().st.settings.open, "Cmd+, opens settings");
 }
+
+#[test]
+fn going_home_leaves_fullscreen() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut h = harness(dir.path());
+    press(&mut h, Key::F, Modifiers::NONE);
+    assert!(h.state().st.fullscreen);
+    h.state_mut().st.navigate(notvlc::ui::pages::Page::Home);
+    h.run_steps(2);
+    let st = &h.state().st;
+    assert_eq!(st.view, View::Library);
+    assert!(!st.fullscreen && !st.hide_ui, "the library shows with its chrome and the mini player");
+}

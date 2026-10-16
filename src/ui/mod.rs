@@ -329,6 +329,15 @@ impl NotVlcApp {
         use crate::app::ports::PlayerState;
         use crate::domain::settings::{BringToFront, ResizeToVideo};
         let ui_set = self.app.settings.interface.clone();
+        // Fullscreen and the hidden interface belong to the player: going to
+        // the library leaves them, so it shows with its chrome and mini player.
+        if self.st.view == View::Library && (self.st.fullscreen || self.st.hide_ui) {
+            self.st.hide_ui = false;
+            if self.st.fullscreen {
+                self.st.fullscreen = false;
+                ctx.send_viewport_cmd(ViewportCommand::Fullscreen(false));
+            }
+        }
         if !self.window.started {
             self.window.started = true;
             if ui_set.always_on_top {
