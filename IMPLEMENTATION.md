@@ -85,10 +85,13 @@ bookmarks and chapters panel.
 - **Acceptance:**
   - [x] Queue next/previous/repeat/shuffle rules unit-tested (`domain::playlist`)
   - [x] Playlist formats round-trip (`domain::playlist_format`)
-  - [ ] Queue panel and playlist pages match their frames
+  - [x] Queue panel and playlist pages match their frames
+  - [x] Playlist pages: list, detail with play/shuffle/add/rename/export/delete, drag to reorder,
+        import, New Playlist dialog (`6259:14954`) and the playlist context menu (`2459:9389`)
 - **Touches:** `domain/playlist*.rs`, `app/library.rs`, `ui/pages/`, `ui/panels/`
 - **Depends on:** M1
-- **Notes:** the Queue / Bookmarks / Chapters popover matches `491:1780` (`ui/panels/queue.rs`); playlist pages pending.
+- **Notes:** the Queue / Bookmarks / Chapters popover matches `491:1780` (`ui/panels/queue.rs`); playlist
+  pages done (`ui/pages/`, `app/pages.rs`).
 
 ### M5: Library  `[~]`
 
@@ -98,9 +101,13 @@ list views; sort and search; thumbnails and metadata.
 - **Acceptance:**
   - [x] History, resume points and folder listings unit-tested (`app::library`)
   - [x] Thumbnails and metadata come from libvlc (smoke test)
-  - [ ] Pages match the library frames (`970:2703` and siblings) in snapshots
+  - [x] Pages match the library frames (`970:2703` and siblings) in snapshots
+  - [x] Sorting follows the design's options (`domain::browse`, unit-tested); page models unit-tested
 - **Touches:** `app/library.rs`, `app/workers.rs`, `ui/pages/`
 - **Depends on:** M1
+- **Notes:** grid (`970:2703`), list (`970:3308`), Home (`6261:15078`) and the player side column
+  (`187:328`, `848:1996`) render from `--view library --page season|home [--list]` and
+  `--view player --side-panel`. Music adds Songs/Albums/Artists/Genres from tags.
 
 ### M6: Network  `[~]`
 
@@ -111,6 +118,8 @@ VLC's login prompts.
   - [x] Engine lists discovery services and browses containers (`Helper::services`, `browse`)
   - [x] libvlc login/question/progress dialogs are bridged to events
   - [ ] Network page and Open Network Stream dialog match `6216:13614`
+  - [x] Network page: services by category, service items, containers browsed on a worker thread,
+        recent streams (`ui/pages/network.rs`); the dialog itself lives in `ui/dialogs/`
 - **Touches:** `infra/vlc/helper.rs`, `infra/vlc/dialogs.rs`, `ui/pages/`, `ui/dialogs/`
 - **Depends on:** M1
 
