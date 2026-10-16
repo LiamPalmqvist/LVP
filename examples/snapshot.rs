@@ -323,6 +323,108 @@ fn main() {
     }) {
         harness.hover_at(egui::pos2(x, y));
     }
+    {
+        let ui = harness.state_mut();
+
+        // ---- dialogs ----
+        // --vlc-dialog login|question|progress|error   queue one of VLC's prompts
+        if let Some(kind) = arg_value(&args, "--vlc-dialog") {
+            use notvlc::app::ports::DialogRequest;
+            let (title, text) = ("Authentication required".to_string(), "smb://nas/Movies needs a login.".to_string());
+            ui.app.dialogs.push_back(match kind.as_str() {
+                "question" => DialogRequest::Question {
+                    id: 7,
+                    title: "Insecure site".into(),
+                    text: "The certificate of this server could not be verified. Do you want to continue anyway?"
+                        .into(),
+                    cancel: "Cancel".into(),
+                    action1: Some("Accept permanently".into()),
+                    action2: Some("Accept once".into()),
+                },
+                "progress" => DialogRequest::Progress {
+                    id: 8,
+                    title: "Downloading".into(),
+                    text: "Fetching the playlist...".into(),
+                    position: Some(0.42),
+                    cancel: Some("Cancel".into()),
+                },
+                "error" => DialogRequest::Error {
+                    title: "Your input can't be opened".into(),
+                    text: "VLC is unable to open the MRL 'http://example.com/missing.mp4'.".into(),
+                },
+                _ => DialogRequest::Login { id: 6, title, text, default_username: "liam".into(), ask_store: true },
+            });
+        }
+        if arg_value(&args, "--dialog").is_some_and(|d| d.starts_with("media_info")) {
+            use notvlc::domain::media::CodecInfo;
+            let mut st = fake.status.lock();
+            st.meta.title = Some("The Wand S01E11".into());
+            st.meta.show_name = Some("The Wand".into());
+            st.meta.season = Some("1".into());
+            st.meta.episode = Some("11".into());
+            st.meta.genre = Some("Fantasy".into());
+            st.meta.date = Some("2024".into());
+            st.meta.encoded_by = Some("Lavf60.16.100".into());
+            st.meta.codecs = vec![
+                CodecInfo {
+                    kind: "Video".into(),
+                    codec: "H264 - MPEG-4 AVC (part 10) (avc1)".into(),
+                    width: Some(1920),
+                    height: Some(1080),
+                    frame_rate: Some(23.976),
+                    bitrate: 4_800_000,
+                    ..Default::default()
+                },
+                CodecInfo {
+                    kind: "Audio".into(),
+                    codec: "MPEG AAC Audio (mp4a)".into(),
+                    language: Some("English".into()),
+                    channels: Some(2),
+                    sample_rate: Some(48000),
+                    bitrate: 192_000,
+                    ..Default::default()
+                },
+            ];
+            st.stats.read_bytes = 182_334_112;
+            st.stats.input_bitrate_kbps = 5120.0;
+            st.stats.demux_bitrate_kbps = 4980.0;
+            st.stats.decoded_video = 3120;
+            st.stats.displayed_pictures = 3118;
+            st.stats.lost_pictures = 2;
+            st.stats.decoded_audio = 6100;
+            st.stats.played_abuffers = 6100;
+        }
+        if let Some(d) = arg_value(&args, "--dialog").filter(|d| d.starts_with("add_subtitles")) {
+            let season = home.join("Videos/Shows/The Wand/S01");
+            for n in 1..=15 {
+                touch(&season.join(format!("Subs/The_Wand_S01E{n:02}.srt")));
+            }
+            touch(&season.join("Subs/The_Wand_S01E11.en.srt"));
+            touch(&season.join("Subs/Bonus_Interview.srt"));
+            if d == "add_subtitles" {
+                ui.st.dialogs.add_subtitles_to_folder(season.clone(), Some(season.join("Subs")));
+            }
+        }
+        if arg_value(&args, "--dialog").as_deref() == Some("convert") {
+            use notvlc::app::JobState;
+            ui.app.jobs.push(JobState {
+                id: 1,
+                label: "The_Wand_S01E01.mp4 to The_Wand_S01E01.webm".into(),
+                progress: 0.62,
+                finished: None,
+            });
+            ui.app.jobs.push(JobState {
+                id: 2,
+                label: "untangle to untangle.flac".into(),
+                progress: 1.0,
+                finished: Some((true, "Done".into())),
+            });
+        }
+        if arg_value(&args, "--dialog").as_deref() == Some("open_network") {
+            ui.app.settings.network.recent_urls =
+                vec!["https://www.example.com/live/playlist.m3u8".into(), "rtsp://192.168.1.10:554/stream".into()];
+        }
+    }
 
     for _ in 0..steps {
         harness.step();

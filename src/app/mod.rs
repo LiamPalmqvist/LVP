@@ -2,11 +2,13 @@
 //! asks for. Talks to libvlc and the disk only through `ports`.
 
 pub mod actions;
+pub mod convert;
 pub mod fake;
 pub mod library;
 pub mod pages;
 pub mod ports;
 pub mod presets;
+pub mod subtitles;
 #[cfg(test)]
 pub mod testing;
 pub mod video;

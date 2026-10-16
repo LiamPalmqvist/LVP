@@ -1,7 +1,20 @@
 //! Modal dialogs: VLC's own prompts, open network/disc/capture, convert,
 //! media information, jump to time, onboarding and about.
 
+mod about;
+mod capture;
+mod convert;
+mod disc;
+pub mod frame;
+mod jump;
+mod media_info;
+mod network;
+mod onboarding;
+mod subtitles;
+mod vlc;
+
 use crate::app::App;
+use crate::domain::media::MediaItem;
 use crate::ui::state::UiState;
 
 #[derive(Default)]
@@ -17,6 +30,17 @@ pub struct DialogsState {
     pub onboarding: bool,
     pub add_subtitles: bool,
     pub new_playlist: bool,
+    login: vlc::LoginState,
+    jump: jump::JumpState,
+    network: network::NetworkState,
+    disc: disc::DiscState,
+    capture_state: capture::CaptureState,
+    info: media_info::InfoState,
+    convert_state: convert::ConvertState,
+    subs: subtitles::SubsState,
+    onboard: onboarding::OnboardingState,
+    /// Items handed to Convert / Save by another dialog.
+    convert_source: Option<Vec<MediaItem>>,
 }
 
 impl DialogsState {
@@ -34,19 +58,84 @@ impl DialogsState {
             "onboarding" => &mut self.onboarding,
             "add_subtitles" => &mut self.add_subtitles,
             "new_playlist" => &mut self.new_playlist,
+            "onboarding_theme" | "onboarding_shortcuts" => {
+                self.onboard.step = if name.ends_with("theme") { 1 } else { 2 };
+                &mut self.onboarding
+            }
+            "add_subtitles_file" | "add_subtitles_online" => {
+                self.subs.preset_file(name.ends_with("online"));
+                &mut self.add_subtitles
+            }
+            "convert_profile" => {
+                self.convert_state.open_editor = true;
+                &mut self.convert
+            }
+            "media_info_codec" | "media_info_stats" => {
+                self.info.set_tab(if name.ends_with("codec") { 1 } else { 2 });
+                &mut self.media_info
+            }
             _ => return false,
         };
         *flag = true;
         true
     }
+
+    /// Opens Convert / Save with these items as the source.
+    pub fn convert_items(&mut self, items: Vec<MediaItem>) {
+        self.convert_source = Some(items);
+        self.convert = true;
+    }
+
+    /// Opens Add Subtitles on a folder of videos, with subtitles from
+    /// `subs` (the same folder when `None`).
+    pub fn add_subtitles_to_folder(&mut self, videos: std::path::PathBuf, subs: Option<std::path::PathBuf>) {
+        self.subs.preset_folder(videos, subs);
+        self.add_subtitles = true;
+    }
+
+    /// True when one of this module's dialogs is showing.
+    pub fn any_open(&self) -> bool {
+        self.about
+            || self.open_network
+            || self.open_disc
+            || self.capture
+            || self.convert
+            || self.media_info
+            || self.jump_to_time
+            || self.onboarding
+            || self.add_subtitles
+    }
 }
 
 pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
-    if st.dialogs.about {
-        let mut open = true;
-        egui::Window::new("About").open(&mut open).show(ctx, |ui| {
-            ui.label(format!("NotVLC {} on libvlc {}", env!("CARGO_PKG_VERSION"), app.engine.version()));
-        });
-        st.dialogs.about = open;
+    if st.dialogs.open_network {
+        network::show(ctx, app, st);
     }
+    if st.dialogs.open_disc {
+        disc::show(ctx, app, st);
+    }
+    if st.dialogs.capture {
+        capture::show(ctx, app, st);
+    }
+    if st.dialogs.convert {
+        convert::show(ctx, app, &mut st.dialogs);
+    }
+    let d = &mut st.dialogs;
+    if d.add_subtitles {
+        subtitles::show(ctx, app, &mut d.add_subtitles, &mut d.subs);
+    }
+    if d.media_info {
+        media_info::show(ctx, app, &mut d.media_info, &mut d.info);
+    }
+    if d.jump_to_time {
+        jump::show(ctx, app, &mut d.jump_to_time, &mut d.jump);
+    }
+    if d.about {
+        about::show(ctx, app, &mut d.about);
+    }
+    if d.onboarding {
+        onboarding::show(ctx, app, &mut d.onboarding, &mut d.onboard);
+    }
+    // VLC's prompts go last so they sit above anything the user opened.
+    vlc::show(ctx, app, &mut d.login);
 }

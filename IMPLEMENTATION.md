@@ -29,7 +29,7 @@ warnings` pass, and each screen's snapshot (`examples/snapshot.rs`) matches its 
 | | Done | Total |
 |---|---|---|
 | Mandatory | 0 | 8 |
-| Optional | 0 | 8 |
+| Optional | 4 | 8 |
 
 ---
 
@@ -45,11 +45,12 @@ A-B loop, jumps, titles and chapters, fullscreen, hide UI; video drawn in the re
 - **Acceptance:**
   - [x] `tests/engine_smoke.rs` plays a generated clip: frames reach the UI buffer, seek and end work
   - [x] Control bar matches the Player frame (`187:328`) in a snapshot
-  - [ ] Open file/folder/disc/network dialogs open media and switch to the player
+  - [x] Open file/folder/disc/network dialogs open media and switch to the player
   - [ ] Fullscreen, hide UI and picture-in-picture work in the running app
 - **Touches:** `infra/vlc/engine.rs`, `app/mod.rs`, `ui/shell/`
 - **Depends on:** none
-- **Notes:** engine, queue logic, shortcuts and control bar are in; dialogs pending.
+- **Notes:** engine, queue logic, shortcuts and control bar are in; Open Disc, Open Capture Device,
+  Open Network Stream and Jump to Time dialogs are in `ui/dialogs/` (MRLs in `domain::disc`).
 
 ### M2: Tracks and sync  `[~]`
 
@@ -117,9 +118,10 @@ VLC's login prompts.
 - **Acceptance:**
   - [x] Engine lists discovery services and browses containers (`Helper::services`, `browse`)
   - [x] libvlc login/question/progress dialogs are bridged to events
-  - [ ] Network page and Open Network Stream dialog match `6216:13614`
+  - [x] Network page and Open Network Stream dialog match `6216:13614` (`--page network`, `--dialog open_network`)
   - [x] Network page: services by category, service items, containers browsed on a worker thread,
         recent streams (`ui/pages/network.rs`); the dialog itself lives in `ui/dialogs/`
+  - [x] VLC's login, question, progress and error prompts are shown and answered (`--vlc-dialog login`)
 - **Touches:** `infra/vlc/helper.rs`, `infra/vlc/dialogs.rs`, `ui/pages/`, `ui/dialogs/`
 - **Depends on:** M1
 
@@ -162,21 +164,28 @@ Customisable toolbar, player and file context menus, mini player, music view.
 Not required for the end goal. Do not start one while any `M*` is unfinished unless the user
 explicitly asks.
 
-### O1: Onboarding wizard  `[ ]`
+### O1: Onboarding wizard  `[x]`
 
 The eleven-step first-run flow from the Onboarding frames.
 
 - **Value:** sets theme, accent, folders and key preferences before first use.
 - **Depends on:** M7
-- **Notes:** none
+- **Notes:** `ui/dialogs/onboarding.rs` (`--onboarding`, `--dialog onboarding_theme`,
+  `onboarding_shortcuts`). The eleven frames are three steps: welcome with a media folder
+  (`1899:3055`), theme and accent over a player preview (`1902:3670` and eight accent variants), and
+  keyboard shortcuts (`1902:6770`, shown from the live bindings; pressing a key lights its row).
+  Skip, Esc or Finish set `general.onboarding_done`.
 
-### O2: Convert and stream  `[~]`
+### O2: Convert and stream  `[x]`
 
 VLC's Convert/Save and Stream with profiles (`Profiles` frame).
 
 - **Value:** one of VLC's most used tools beyond playback.
 - **Depends on:** M1
-- **Notes:** engine side done (`Helper::start_job` runs a sout chain with progress events).
+- **Notes:** engine side done (`Helper::start_job` runs a sout chain with progress events). Convert /
+  Save and Stream dialog (`--dialog convert`): current item, picked files or the queue; file, HTTP,
+  RTSP, RTP or UDP destinations; job list with progress and cancel. Chains built and tested in
+  `domain::convert`.
 
 ### O3: Record and snapshot  `[~]`
 
@@ -205,12 +214,17 @@ VLC visualisations (spectrometer, scope, spectrum, VU meter, Goom) and the music
   track's waveform loudness at the playhead, and settles when paused. VLC's own visualisations show
   as a picture through the shell when `audio.visualizer` is set.
 
-### O6: Batch subtitle matching  `[ ]`
+### O6: Batch subtitle matching  `[x]`
 
 "Add Subtitles to Playlist/Folder": match subtitle files to videos and attach them in bulk.
 
 - **Value:** saves attaching subtitles one file at a time.
 - **Depends on:** M2
+- **Notes:** Add Subtitles dialog (`--dialog add_subtitles`, `add_subtitles_file`,
+  `add_subtitles_online`): to the playing file, a folder of videos (subtitles copied next to each video
+  under its name after confirmation) or the queue (`:sub-file=` options). Matching levels follow VLC's
+  sub-autodetect-fuzzy (`domain::subtitles`). "From OpenSubtitles" explains it is unavailable (VLC uses
+  the VLSub Lua extension, which libvlc cannot run).
 
 ### O7: Extensions  `[x]`
 
@@ -222,12 +236,16 @@ Manage VLC Lua add-ons (playlist parsers, discovery, metadata) in the user's VLC
   and removes scripts in VLC's user Lua folder. "Load add-ons on startup" is stored only: libvlc 3
   has no switch to skip user Lua scripts.
 
-### O8: Conversion profiles  `[ ]`
+### O8: Conversion profiles  `[x]`
 
 Create and edit Convert profiles (codec, bitrate, container) as in the Profiles frame.
 
 - **Value:** custom output formats.
 - **Depends on:** O2
+- **Notes:** VLC's standard profiles plus an editor (`--dialog convert_profile`), stored under the
+  store key "profiles" (`App::conversion_profiles`). The `Profiles` frame (`6648:20666`) is in fact
+  the app menu's Profile submenu (Movies, Shows, Music, Work), i.e. preference profiles, not
+  conversion profiles; that menu is not built.
 
 ---
 
