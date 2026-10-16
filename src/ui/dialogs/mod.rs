@@ -9,6 +9,7 @@ pub mod frame;
 mod jump;
 mod media_info;
 mod network;
+mod onboarding;
 mod subtitles;
 mod vlc;
 
@@ -37,6 +38,7 @@ pub struct DialogsState {
     info: media_info::InfoState,
     convert_state: convert::ConvertState,
     subs: subtitles::SubsState,
+    onboard: onboarding::OnboardingState,
     /// Items handed to Convert / Save by another dialog.
     convert_source: Option<Vec<MediaItem>>,
 }
@@ -56,6 +58,10 @@ impl DialogsState {
             "onboarding" => &mut self.onboarding,
             "add_subtitles" => &mut self.add_subtitles,
             "new_playlist" => &mut self.new_playlist,
+            "onboarding_theme" | "onboarding_shortcuts" => {
+                self.onboard.step = if name.ends_with("theme") { 1 } else { 2 };
+                &mut self.onboarding
+            }
             "add_subtitles_file" | "add_subtitles_online" => {
                 self.subs.preset_file(name.ends_with("online"));
                 &mut self.add_subtitles
@@ -126,6 +132,9 @@ pub fn show(ctx: &egui::Context, app: &mut App, st: &mut UiState) {
     }
     if d.about {
         about::show(ctx, app, &mut d.about);
+    }
+    if d.onboarding {
+        onboarding::show(ctx, app, &mut d.onboarding, &mut d.onboard);
     }
     // VLC's prompts go last so they sit above anything the user opened.
     vlc::show(ctx, app, &mut d.login);

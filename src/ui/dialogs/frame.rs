@@ -172,6 +172,8 @@ pub enum Btn {
     Accent,
     /// Accent fill with dark text (the onboarding's Next).
     Solid,
+    /// BG/Accent Dark fill with accent text (the welcome step's Next).
+    Dim,
 }
 
 pub fn btn(ui: &mut Ui, label: &str, kind: Btn, enabled: bool) -> Response {
@@ -188,6 +190,7 @@ pub fn btn_sized(ui: &mut Ui, label: &str, kind: Btn, enabled: bool, min: Vec2, 
     let (bg, fg) = match kind {
         Btn::Plain => (if hovered { p.bg_a1 } else { p.bg_a3 }, if hovered { p.fg1 } else { p.fg_a2 }),
         Btn::Accent => (if hovered { with_alpha(p.accent, 0.35) } else { p.bg_accent }, p.accent),
+        Btn::Dim => (if hovered { p.bg_accent } else { p.bg_accent_dark }, p.accent),
         Btn::Solid => (if hovered { p.accent_bright } else { p.accent }, if p.dark { p.fg_b1 } else { Color32::WHITE }),
     };
     let a = if enabled { 1.0 } else { 0.5 };

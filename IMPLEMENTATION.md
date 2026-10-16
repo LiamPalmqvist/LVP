@@ -145,13 +145,17 @@ Customisable toolbar, player and file context menus, mini player, music view.
 Not required for the end goal. Do not start one while any `M*` is unfinished unless the user
 explicitly asks.
 
-### O1: Onboarding wizard  `[ ]`
+### O1: Onboarding wizard  `[x]`
 
 The eleven-step first-run flow from the Onboarding frames.
 
 - **Value:** sets theme, accent, folders and key preferences before first use.
 - **Depends on:** M7
-- **Notes:** none
+- **Notes:** `ui/dialogs/onboarding.rs` (`--onboarding`, `--dialog onboarding_theme`,
+  `onboarding_shortcuts`). The eleven frames are three steps: welcome with a media folder
+  (`1899:3055`), theme and accent over a player preview (`1902:3670` and eight accent variants), and
+  keyboard shortcuts (`1902:6770`, shown from the live bindings; pressing a key lights its row).
+  Skip, Esc or Finish set `general.onboarding_done`.
 
 ### O2: Convert and stream  `[x]`
 
