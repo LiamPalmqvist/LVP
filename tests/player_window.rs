@@ -89,25 +89,35 @@ fn going_home_leaves_fullscreen() {
 }
 
 #[test]
-fn closing_the_mini_player_keeps_it_closed_until_the_next_play() {
+fn closing_the_mini_player_after_visiting_the_player_dismisses_it() {
+    // The reported steps: play from the library, open the full player from
+    // the mini player, go home with the logo, then close the mini player.
     let dir = tempfile::tempdir().unwrap();
     let store = Arc::new(JsonStore::at(dir.path().join("data"), dir.path().join("cache")));
     let engine = Arc::new(FakeEngine::new());
     let mut app = App::new(engine.clone(), Arc::new(FakeProbe), store);
     app.settings.general.onboarding_done = true;
-    app.play_items(vec![MediaItem::file("/media/a.mp3"), MediaItem::file("/media/b.mp3")], 0, None);
-    app.play_index(1);
+    app.play_items(vec![MediaItem::file("/media/a.mp4"), MediaItem::file("/media/b.mp4")], 1, None);
     let mut h = Harness::builder()
         .with_size(egui::vec2(1280.0, 800.0))
         .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+    h.state_mut().st.view = View::Library;
     h.run_steps(2);
+    h.state_mut().st.view = View::Player;
+    h.run_steps(2);
+    h.state_mut().st.navigate(notvlc::ui::pages::Page::Home);
+    h.run_steps(2);
+    assert_eq!(h.state().st.view, View::Library);
+    assert!(h.state().st.music.mini_closed.is_none(), "the mini player shows at home");
 
     let s = h.state_mut();
     notvlc::ui::music::close_miniplayer(&mut s.app, &mut s.st);
     // libvlc reports the stop a frame or two later: the status still says playing.
     engine.status.lock().state = notvlc::app::ports::PlayerState::Playing;
     h.run_steps(3);
-    assert!(h.state().st.music.mini_closed.is_some(), "a stale playing state must not reopen it");
+    engine.status.lock().state = notvlc::app::ports::PlayerState::Stopped;
+    h.run_steps(3);
+    assert!(h.state().st.music.mini_closed.is_some(), "dismissed, not left showing the replay button");
 
     h.state_mut().app.play_index(0);
     h.run_steps(2);
