@@ -1,5 +1,6 @@
 //! The 40pt custom title bar: logo, app menu, sidebar toggle, location,
-//! centred title, window buttons.
+//! centred title, window buttons. On macOS the window's own traffic lights
+//! sit at the left of the bar instead of the design's buttons.
 
 use egui::{Align2, Rect, Sense, Ui, ViewportCommand, pos2, vec2};
 
@@ -10,6 +11,9 @@ use crate::ui::theme::font;
 use crate::ui::widgets::{self, menu_row, pal, submenu};
 
 pub const HEIGHT: f32 = 40.0;
+/// Room for macOS's traffic lights: 13pt margins in the 40pt bar put the zoom
+/// button's right edge at 73pt, and the bar's content starts 16pt after it.
+const TRAFFIC_LIGHTS: f32 = 76.0;
 
 pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState) {
     let p = pal(ui.ctx());
@@ -39,9 +43,12 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState) {
         rect.width() * 0.4,
     );
 
+    // In fullscreen macOS moves the traffic lights out of the window.
+    let fullscreen = ui.ctx().input(|i| i.viewport().fullscreen.unwrap_or(false));
+    let inset = if st.native_titlebar && !fullscreen { TRAFFIC_LIGHTS } else { 0.0 };
     let mut left = ui.new_child(
         egui::UiBuilder::new()
-            .max_rect(Rect::from_min_size(rect.min + vec2(6.0, 6.0), vec2(420.0, 28.0)))
+            .max_rect(Rect::from_min_size(rect.min + vec2(6.0 + inset, 6.0), vec2(420.0, 28.0)))
             .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
     left.spacing_mut().item_spacing.x = 7.0;
@@ -84,6 +91,9 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState) {
         }
     }
 
+    if st.native_titlebar {
+        return;
+    }
     // Window buttons, right aligned, 36x24 each.
     let mut right = ui.new_child(
         egui::UiBuilder::new()

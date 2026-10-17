@@ -96,7 +96,12 @@ fn main() -> eframe::Result {
         .with_app_id("org.notvlc.NotVLC")
         .with_inner_size(size)
         .with_min_inner_size([640.0, 400.0])
-        .with_decorations(false)
+        // macOS keeps its native frame (corners, shadow, traffic lights) with the
+        // app's bar under a transparent title bar; elsewhere the app draws it all.
+        .with_decorations(cfg!(target_os = "macos"))
+        .with_fullsize_content_view(true)
+        .with_titlebar_shown(false)
+        .with_title_shown(false)
         .with_transparent(false);
     if remember && let Some([x, y]) = app.settings.interface.window_pos {
         viewport = viewport.with_position([x, y]);
@@ -113,5 +118,17 @@ fn main() -> eframe::Result {
     if let Some(c) = notvlc::infra::media_controls::SystemMediaControls::new() {
         app.set_media_controls(Box::new(c));
     }
-    eframe::run_native("NotVLC", options, Box::new(move |cc| Ok(Box::new(NotVlcApp::new(&cc.egui_ctx, app, files)))))
+    eframe::run_native(
+        "NotVLC",
+        options,
+        Box::new(move |cc| {
+            #[allow(unused_mut)]
+            let mut ui = NotVlcApp::new(&cc.egui_ctx, app, files);
+            #[cfg(target_os = "macos")]
+            if let Some(mut lights) = notvlc::infra::macos_window::TrafficLights::new(cc) {
+                ui.set_native_titlebar(Box::new(move |height, shown| lights.place(height as f64, shown)));
+            }
+            Ok(Box::new(ui))
+        }),
+    )
 }

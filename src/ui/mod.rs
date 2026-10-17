@@ -40,6 +40,9 @@ pub struct NotVlcApp {
     palette_key: Option<(Theme, Accent, bool)>,
     last_title: String,
     window: WindowTracker,
+    /// Told every frame the title bar's height and whether it is shown, so a
+    /// native window frame can line its buttons up with it.
+    titlebar_hook: Option<Box<dyn FnMut(f32, bool)>>,
 }
 
 /// Window-level behaviour driven by Interface settings.
@@ -52,9 +55,17 @@ struct WindowTracker {
     paused_for_minimize: bool,
     last_state: Option<crate::app::ports::PlayerState>,
     last_source: Option<String>,
+    was_fullscreen: bool,
 }
 
 impl NotVlcApp {
+    /// Uses the platform's window buttons (drawn by the hook's owner) instead
+    /// of the design's.
+    pub fn set_native_titlebar(&mut self, hook: Box<dyn FnMut(f32, bool)>) {
+        self.st.native_titlebar = true;
+        self.titlebar_hook = Some(hook);
+    }
+
     pub fn new(ctx: &egui::Context, app: App, open: Vec<PathBuf>) -> Self {
         theme::install_fonts(ctx);
         let repaint = ctx.clone();
@@ -70,6 +81,7 @@ impl NotVlcApp {
             palette_key: None,
             last_title: String::new(),
             window: WindowTracker::default(),
+            titlebar_hook: None,
         };
         if !open.is_empty() {
             me.app.open_paths(open);
@@ -112,6 +124,9 @@ impl NotVlcApp {
         egui::CentralPanel::default().frame(egui::Frame::new().fill(p.bg_b1)).show(ctx, |ui| {
             let full = ui.max_rect();
             let mut body = full;
+            if let Some(hook) = &mut self.titlebar_hook {
+                hook(shell::titlebar::HEIGHT, chrome);
+            }
             if chrome {
                 let bar = Rect::from_min_size(full.min, vec2(full.width(), shell::titlebar::HEIGHT));
                 ui.scope_builder(egui::UiBuilder::new().max_rect(bar), |ui| {
@@ -365,6 +380,12 @@ impl NotVlcApp {
                 self.app.mark_settings_dirty();
             }
         }
+        // Leaving fullscreen from the system (the green button, Mission
+        // Control) ends the player's fullscreen too.
+        if self.window.was_fullscreen && !fullscreen && self.st.fullscreen {
+            self.st.fullscreen = false;
+        }
+        self.window.was_fullscreen = fullscreen;
         // Pause when minimised, resume when restored.
         self.app.system.window_minimized = minimized;
         if minimized != self.window.was_minimized {

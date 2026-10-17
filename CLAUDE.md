@@ -39,6 +39,8 @@ cargo fmt                                     # format
 cargo run                                     # run the app (needs /Applications/VLC.app or NOTVLC_LIBVLC)
 cargo run --example snapshot -- --view player /tmp/p.png   # headless render of the UI with demo content
 tools/bundle-macos.sh                         # release build packaged as dist/NotVLC.app (--debug for a dev build)
+tools/build-linux.sh                          # Linux tarball in dist/ (--install-deps, --debug)
+gh workflow run build.yml                     # build macOS, Linux and Windows packages on GitHub Actions
 ```
 
 `cargo run --example snapshot -- --help`-style flags are documented at the top of
@@ -131,6 +133,10 @@ architecture needs revisiting; raise it rather than routing around it.
   preloaded first because libvlc links it through `@rpath`. libvlccore also gives access to VLC
   object variables, which is how audio filters, video filters, recording and subtitle timing change
   live; without it only the equalizer and picture adjustments work live.
+- On macOS the window keeps AppKit's frame (corners, shadow, traffic lights) with a transparent
+  title bar; `infra/macos_window.rs` moves the traffic lights into the 40pt bar every frame, and
+  `UiState::native_titlebar` makes the bar leave room for them. Elsewhere the app draws the
+  design's window buttons.
 - Video comes through libvlc's vmem callbacks as RGBA into a double buffer
   (`app/video.rs`) and is uploaded to an `Rgba8Unorm` wgpu texture (`ui/video.rs`). Aspect ratio,
   crop and zoom are applied by the renderer (`ui::video::fit`), not by VLC.

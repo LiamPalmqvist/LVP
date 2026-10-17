@@ -40,6 +40,8 @@ pub struct UiState {
     pub always_on_top: bool,
     /// Compact window with just the picture (picture in picture).
     pub pip: bool,
+    /// The platform draws the window buttons (macOS); the title bar leaves room for them.
+    pub native_titlebar: bool,
     pub panel: Option<PlayerPanel>,
     /// Controls stay visible until this instant when auto-hiding.
     pub controls_until: Instant,
@@ -67,6 +69,7 @@ impl Default for UiState {
             hide_ui: false,
             always_on_top: false,
             pip: false,
+            native_titlebar: false,
             panel: None,
             controls_until: Instant::now(),
             pending: Vec::new(),

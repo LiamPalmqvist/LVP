@@ -274,7 +274,9 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
       track notifications
 - [x] CI pipeline: `.github/workflows/ci.yml` runs fmt, clippy and tests on Linux (libvlc tests skip there)
 - [x] Release / packaging: `tools/bundle-macos.sh` builds `dist/NotVLC.app` with document types; files
-      opened from Finder reach the queue (Apple Events, `infra/macos_open.rs`)
+      opened from Finder reach the queue (Apple Events, `infra/macos_open.rs`); `tools/build-linux.sh`
+      and `tools/build-windows.ps1` package Linux and Windows; the Build workflow runs all three on
+      demand and on `v*` tags, which also publish a GitHub release
 
 ---
 
@@ -292,6 +294,7 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 | 2026-10-13 | Architecture: layered with ports | libvlc FFI and threading stay out of screen code; fake engine for UI snapshots |
 | 2026-10-13 | Language: Rust | User's choice |
 | 2026-10-13 | Engine: libvlc 3 from VLC.app, not mpv | The design's effect panels map 1:1 to VLC modules; libvlc brings VLC's discovery, casting, recording and transcoding |
+| 2026-10-17 | macOS keeps its native window frame | The design's window buttons and square corners looked foreign on macOS; the app's bar sits under a transparent title bar and the traffic lights are moved into it (`infra/macos_window.rs`) |
 | 2026-10-13 | UI: eframe/egui 0.33 with wgpu | Custom-drawn design kit; native wgpu texture for video. 0.33 is the newest that builds on Rust 1.90 |
 | 2026-10-13 | Video via vmem callbacks, geometry in our renderer | Works with any GPU backend; aspect/crop/zoom stay consistent |
 | 2026-10-16 | Software decoding while subtitles are shown (hardware decoding on Automatic) | VLC 3 cannot draw subtitles onto VideoToolbox pictures through vmem; files with subtitles open in software mode and turning subtitles on reopens in place |

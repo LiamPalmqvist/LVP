@@ -12,6 +12,7 @@
 //!   --side-panel          show the library column beside the video
 //!   --collapsed           collapse the library sidebar to icons
 //!   --light               light theme
+//!   --native-titlebar     leave room for macOS's traffic lights instead of drawing window buttons
 //!   --accent NAME         accent colour (orange, red, olive, green, teal, blue, purple, pink, gray)
 //!   --audio               play a music track instead of a video
 //!   --idle                nothing playing
@@ -232,6 +233,7 @@ fn main() {
             eprintln!("unknown dialog {d}");
         }
         st.side_panel = has(&args, "--side-panel");
+        st.native_titlebar = has(&args, "--native-titlebar");
         if has(&args, "--collapsed") {
             st.sidebar_expanded = false;
         }

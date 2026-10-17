@@ -2591,6 +2591,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "quick-xml 0.38.4",
+ "raw-window-handle",
  "resvg",
  "rfd",
  "serde",

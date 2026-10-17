@@ -3,6 +3,8 @@
 
 #[cfg(target_os = "macos")]
 pub mod macos_open;
+#[cfg(target_os = "macos")]
+pub mod macos_window;
 pub mod media_controls;
 pub mod platform;
 #[cfg(unix)]
