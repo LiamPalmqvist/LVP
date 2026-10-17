@@ -87,3 +87,29 @@ fn going_home_leaves_fullscreen() {
     assert_eq!(st.view, View::Library);
     assert!(!st.fullscreen && !st.hide_ui, "the library shows with its chrome and the mini player");
 }
+
+#[test]
+fn closing_the_mini_player_keeps_it_closed_until_the_next_play() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(JsonStore::at(dir.path().join("data"), dir.path().join("cache")));
+    let engine = Arc::new(FakeEngine::new());
+    let mut app = App::new(engine.clone(), Arc::new(FakeProbe), store);
+    app.settings.general.onboarding_done = true;
+    app.play_items(vec![MediaItem::file("/media/a.mp3"), MediaItem::file("/media/b.mp3")], 0, None);
+    app.play_index(1);
+    let mut h = Harness::builder()
+        .with_size(egui::vec2(1280.0, 800.0))
+        .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+    h.run_steps(2);
+
+    let s = h.state_mut();
+    notvlc::ui::music::close_miniplayer(&mut s.app, &mut s.st);
+    // libvlc reports the stop a frame or two later: the status still says playing.
+    engine.status.lock().state = notvlc::app::ports::PlayerState::Playing;
+    h.run_steps(3);
+    assert!(h.state().st.music.mini_closed.is_some(), "a stale playing state must not reopen it");
+
+    h.state_mut().app.play_index(0);
+    h.run_steps(2);
+    assert!(h.state().st.music.mini_closed.is_none(), "the next play brings it back");
+}

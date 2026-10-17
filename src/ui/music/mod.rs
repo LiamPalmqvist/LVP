@@ -7,9 +7,7 @@ mod player;
 mod visualiser;
 mod waveform;
 
-use crate::domain::media::MediaSource;
-
-pub use mini::miniplayer;
+pub use mini::{close as close_miniplayer, miniplayer};
 pub use player::show_player;
 pub use waveform::draw_waveform_seek;
 
@@ -25,9 +23,10 @@ pub struct MusicState {
     pub mini_drag: Option<usize>,
     /// The next press of the queue's sort button sorts Z to A.
     pub mini_sort_desc: bool,
-    /// The mini player was closed while this source was current; it comes
-    /// back when playback starts again.
-    pub mini_closed: Option<MediaSource>,
+    /// The mini player was closed during this play (`App::plays`); it comes
+    /// back when the next play starts. Not the playing state: that lags the
+    /// stop by a frame or two and would reopen it straight away.
+    pub mini_closed: Option<u64>,
     /// Bar levels of the music view's visualiser.
     pub visualiser: visualiser::Visualiser,
 }

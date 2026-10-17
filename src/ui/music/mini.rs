@@ -33,12 +33,10 @@ const ROW_GAP: f32 = 12.0;
 /// The floating player in the library's bottom-right corner.
 pub fn miniplayer(ui: &mut Ui, content: Rect, app: &mut App, st: &mut UiState, frame: Option<(TextureId, [u32; 2])>) {
     let Some(item) = app.queue.current_item().cloned() else { return };
-    if st.music.mini_closed.as_ref() == Some(&item.source) {
-        if !app.is_playing() {
-            return;
-        }
-        st.music.mini_closed = None;
+    if st.music.mini_closed == Some(app.plays) {
+        return;
     }
+    st.music.mini_closed = None;
     let p = pal(ui.ctx());
     // The queue only opens when the window is tall enough for both.
     let queue_open = st.music.mini_queue && content.height() >= HEIGHT + QUEUE_H + GAP + 2.0 * MARGIN;
@@ -63,6 +61,12 @@ pub fn miniplayer(ui: &mut Ui, content: Rect, app: &mut App, st: &mut UiState, f
     let bar = Rect::from_min_size(pos2(preview.min.x, preview.max.y + 4.0), vec2(preview.width(), 16.0));
     progress(ui, bar, app, &p, hovered || ended);
     info(ui, card, bar.max.y + GAP, app, st, &p, &item);
+}
+
+/// Stops playback and hides the mini player until the next play.
+pub fn close(app: &mut App, st: &mut UiState) {
+    app.stop();
+    st.music.mini_closed = Some(app.plays);
 }
 
 /// An icon button positioned absolutely; returns true when clicked.
@@ -135,8 +139,7 @@ fn preview_area(
         let corner = vec2(24.0, 24.0);
         let close = Rect::from_min_size(preview.min + vec2(16.0, 16.0), corner);
         if button(ui, close.expand(3.0), "mini-close", Icon::Close, "Close the mini player", false, p) {
-            app.stop();
-            st.music.mini_closed = Some(item.source.clone());
+            self::close(app, st);
         }
         let open = Rect::from_min_size(pos2(preview.max.x - 16.0 - 24.0, preview.min.y + 16.0), corner);
         if button(ui, open.expand(3.0), "mini-open", Icon::Open, "Open the player", false, p) {

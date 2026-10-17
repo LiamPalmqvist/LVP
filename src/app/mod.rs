@@ -89,6 +89,8 @@ pub struct App {
     pub library: Library,
     pub queue: Queue,
     pub status: EngineStatus,
+    /// Counts items started, so the UI can tell a new play from a stale status.
+    pub plays: u64,
     workers: Workers,
     thumbs: HashMap<String, ThumbState>,
     probing: HashSet<String>,
@@ -140,6 +142,7 @@ impl App {
             library,
             queue,
             status: EngineStatus::default(),
+            plays: 0,
             workers,
             thumbs: HashMap::new(),
             probing: HashSet::new(),
@@ -519,6 +522,7 @@ impl App {
         let Some(mut item) = self.queue.items.get(index).cloned() else { return };
         self.library.enrich(&mut item);
         self.queue.current = Some(index);
+        self.plays += 1;
         let record = self.library.record(&item.source);
         let resume = match (start_ms, self.settings.playback.continue_playback) {
             (Some(ms), _) => Some(ms),
