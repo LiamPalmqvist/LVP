@@ -202,13 +202,27 @@ jobs:
         with:
           name: packaging
           path: packaging
-      # GitHub's Windows images do not ship winget.
+      # GitHub's Windows images do not ship a working winget, and the WinGet
+      # module's Repair-WinGetPackageManager trips over the image's own copy of
+      # App Installer. This installs winget's latest release with its x64
+      # dependencies instead.
       - name: Install winget
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          Install-Module -Name Microsoft.WinGet.Client -Repository PSGallery -Force
-          Repair-WinGetPackageManager -AllUsers -Latest -Force
-          winget --version
+          $ProgressPreference = "SilentlyContinue"
+          $dir = Join-Path $env:RUNNER_TEMP "winget"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          gh release download -R microsoft/winget-cli -D $dir `
+            -p "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle" -p "DesktopAppInstaller_Dependencies.zip"
+          Expand-Archive (Join-Path $dir "DesktopAppInstaller_Dependencies.zip") (Join-Path $dir "deps")
+          $deps = Get-ChildItem (Join-Path $dir "deps\x64") -Filter *.appx | ForEach-Object FullName
+          Add-AppxPackage -Path (Join-Path $dir "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle") `
+            -DependencyPath $deps -ForceUpdateFromAnyVersion -ForceApplicationShutdown
+          $apps = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps"
+          $apps | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          & (Join-Path $apps "winget.exe") --version
       - name: Validate and install the manifest
         shell: pwsh
         run: |
