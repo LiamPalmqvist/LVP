@@ -7,7 +7,7 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/LiamPalmqvist/NotVLC"
 license=('GPL-2.0-or-later')
 # libvlc and the windowing and graphics libraries are loaded at runtime.
-depends=('gcc-libs' 'glibc' 'hicolor-icon-theme' 'libvlc' 'vlc-plugins-all'
+depends=('libgcc' 'glibc' 'hicolor-icon-theme' 'libvlc' 'vlc-plugins-all'
          'libxkbcommon' 'wayland' 'libx11' 'libxcursor' 'libxrandr' 'libxi'
          'vulkan-icd-loader' 'libglvnd')
 makedepends=('cargo')

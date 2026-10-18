@@ -76,7 +76,7 @@ bump() {
 }
 
 # Version-bearing lines only; a checksum or another number is never touched.
-replace_version='s/\Q$ENV{OLD}\E/$ENV{V}/g if /^\s*(-\s*)?(version|pkgver|source|PackageVersion|InstallerUrl|RelativeFilePath|ReleaseNotesUrl)\b/;'
+replace_version='s/\Q$ENV{OLD}\E/$ENV{V}/g if /^\s*(-\s*)?(version|pkgver|source(?:_\w+)?|PackageVersion|InstallerUrl|RelativeFilePath|ReleaseNotesUrl)\b/;'
 
 cask=homebrew/notvlc.rb
 bump "$cask" "$(sed -n 's/^  version "\(.*\)"/\1/p' "$cask")" \
@@ -91,9 +91,9 @@ for pkg in notvlc notvlc-bin; do
     rel='s/^pkgrel=.*/pkgrel=1/; s/^\tpkgrel = .*/\tpkgrel = 1/;'
     [ "$old" = "$version" ] && rel=''
     bump "aur/$pkg/PKGBUILD" "$old" \
-        "$replace_version $rel s/^sha256sums=\('.*'\)/sha256sums=('\$ENV{$sum}')/;"
+        "$replace_version $rel s/^(sha256sums(?:_\\w+)?)=\('.*'\)/\$1=('\$ENV{$sum}')/;"
     bump "aur/$pkg/.SRCINFO" "$old" \
-        "$replace_version $rel s/^\tsha256sums = .*/\tsha256sums = \$ENV{$sum}/;"
+        "$replace_version $rel s/^(\tsha256sums(?:_\\w+)?) = .*/\$1 = \$ENV{$sum}/;"
 done
 
 for manifest in winget/*.yaml; do
