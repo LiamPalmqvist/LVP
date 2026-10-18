@@ -14,6 +14,8 @@ makedepends=('cargo')
 optdepends=('xdg-desktop-portal: file and folder pickers'
             'libnotify: desktop notifications'
             'xdg-utils: show a file in its folder')
+# tools/build-linux.sh strips the binary, so a debug package would be empty.
+options=('!debug')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('efd13549970f60fa9b5dedf8e9f8ebaa16105bd7baadd7947c321fd7514ca63e')
 
