@@ -5,6 +5,9 @@ VLC's own engine. This design was made by the YouTuber [Juxtopposed](https://www
 
 All credit to the design goes to Juxtopposed.
 
+# ALL CODE IS AI GENERATED
+If you want to make improvements to this project, that is entirely welcome. I have to add this disclaimer otherwise I will be crucified by reddit. 
+
 ## Prerequisites
 
 - Rust 1.90 or newer
