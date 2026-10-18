@@ -1,0 +1,271 @@
+name: Packages
+
+# Keeps the Homebrew cask, the AUR packages (notvlc and notvlc-bin) and the
+# winget manifest in step with NotVLC's releases. build.yml runs this after it
+# publishes a release; run it by hand (Actions > Packages > Run workflow, or
+# `gh workflow run packaging.yml -f tag=v0.2.0`) to publish a release again.
+#
+# Every run first proves the packages work: the cask installs on macOS, both
+# AUR packages build and install on Arch, and winget validates and installs the
+# manifest on Windows. A pull request that touches packaging stops there.
+# Publishing then pushes the cask to LiamPalmqvist/homebrew-notvlc, the
+# PKGBUILDs to the AUR and a pull request to microsoft/winget-pkgs, and
+# records the new version in packaging/ on main. A channel whose secret is not
+# set is skipped with a notice; packaging/README.md describes the secrets.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: true
+    secrets:
+      HOMEBREW_TAP_KEY:
+        required: false
+      AUR_SSH_KEY:
+        required: false
+      WINGET_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v0.2.0
+        type: string
+        required: true
+      publish:
+        description: Push to Homebrew, the AUR and winget (off checks only)
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - packaging/**
+      - .github/workflows/packaging.yml
+      - tools/build-linux.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: packaging-${{ inputs.tag || github.ref }}
+
+env:
+  # On a pull request there is no tag: packaging/ is checked as it stands.
+  TAG: ${{ inputs.tag }}
+  PUBLISH: ${{ github.event_name != 'pull_request' && inputs.publish }}
+
+jobs:
+  # Bumps packaging/ once, on Linux, and hands the same files to every channel.
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Point packaging/ at the release
+        if: env.TAG != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: packaging/bump.sh "$TAG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packaging
+          path: packaging/
+          if-no-files-found: error
+          # Keeps each .SRCINFO.
+          include-hidden-files: true
+
+  homebrew:
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaging
+          path: packaging
+      - name: Install from a local tap
+        run: |
+          brew update --quiet
+          brew tap-new --no-git notvlc/ci
+          tap="$(brew --repository)/Library/Taps/notvlc/homebrew-ci"
+          mkdir -p "$tap/Casks"
+          cp packaging/homebrew/notvlc.rb "$tap/Casks/"
+          brew style --cask notvlc/ci/notvlc
+          brew audit --cask --online --strict notvlc/ci/notvlc
+          brew install --cask notvlc/ci/notvlc
+          app=/Applications/NotVLC.app
+          if xattr -p com.apple.quarantine "$app" >/dev/null 2>&1; then
+            echo "::error::NotVLC.app is still quarantined after install"
+            exit 1
+          fi
+          "$app/Contents/MacOS/notvlc" --export-icon "$RUNNER_TEMP/icon.png"
+          test -s "$RUNNER_TEMP/icon.png"
+          brew uninstall --cask --zap notvlc/ci/notvlc
+      - name: Push to the tap
+        if: env.PUBLISH == 'true'
+        env:
+          TAP_KEY: ${{ secrets.HOMEBREW_TAP_KEY }}
+        run: |
+          if [ -z "$TAP_KEY" ]; then
+            echo "::notice::HOMEBREW_TAP_KEY is not set, so the tap was not updated."
+            exit 0
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$TAP_KEY" > ~/.ssh/tap
+          chmod 600 ~/.ssh/tap
+          curl -fsSL https://api.github.com/meta | jq -r '.ssh_keys[] | "github.com " + .' > ~/.ssh/github_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/tap -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/github_hosts"
+          git clone git@github.com:LiamPalmqvist/homebrew-notvlc.git "$RUNNER_TEMP/tap"
+          cp packaging/homebrew/notvlc.rb "$RUNNER_TEMP/tap/Casks/notvlc.rb"
+          cd "$RUNNER_TEMP/tap"
+          git add Casks/notvlc.rb
+          if git diff --cached --quiet; then
+            echo "The tap already has this version."
+            exit 0
+          fi
+          version=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/notvlc.rb)
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "notvlc $version"
+          git push origin HEAD
+
+  aur:
+    needs: prepare
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: [notvlc, notvlc-bin]
+    steps:
+      - run: pacman -Syu --noconfirm --needed git jq namcap openssh
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaging
+          path: packaging
+      - name: Build and install
+        working-directory: packaging/aur/${{ matrix.pkg }}
+        run: |
+          # makepkg refuses to run as root.
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+          chown -R builder .
+          sudo -u builder makepkg --printsrcinfo > .SRCINFO.made
+          if ! diff -u .SRCINFO .SRCINFO.made; then
+            if [ "$PUBLISH" = true ]; then
+              echo "::warning::packaging/aur/${{ matrix.pkg }}/.SRCINFO differs from makepkg's; the AUR gets makepkg's."
+            else
+              echo "::error::packaging/aur/${{ matrix.pkg }}/.SRCINFO does not match the PKGBUILD"
+              exit 1
+            fi
+          fi
+          sudo -u builder makepkg --syncdeps --noconfirm
+          namcap PKGBUILD ./*.pkg.tar.zst || true
+          pacman -U --noconfirm ./*.pkg.tar.zst
+          notvlc --export-icon /tmp/icon.png
+          test -s /tmp/icon.png
+      - name: Push to the AUR
+        if: env.PUBLISH == 'true'
+        working-directory: packaging/aur/${{ matrix.pkg }}
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          if [ -z "$AUR_SSH_KEY" ]; then
+            echo "::notice::AUR_SSH_KEY is not set, so ${{ matrix.pkg }} was built but not pushed."
+            exit 0
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          # The AUR's published ed25519 key: SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4
+          echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > ~/.ssh/aur_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aur -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/aur_hosts"
+          # A name the AUR does not have yet clones empty and is created by the push.
+          git clone "ssh://aur@aur.archlinux.org/${{ matrix.pkg }}.git" /tmp/aur
+          cp PKGBUILD /tmp/aur/PKGBUILD
+          cp .SRCINFO.made /tmp/aur/.SRCINFO
+          cd /tmp/aur
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "The AUR already has this version."
+            exit 0
+          fi
+          release="$(sed -n 's/^\tpkgver = //p' .SRCINFO)-$(sed -n 's/^\tpkgrel = //p' .SRCINFO)"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Update to $release"
+          git push origin HEAD:master
+
+  winget:
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaging
+          path: packaging
+      # GitHub's Windows images do not ship winget.
+      - name: Install winget
+        shell: pwsh
+        run: |
+          Install-PackageProvider -Name NuGet -Force | Out-Null
+          Install-Module -Name Microsoft.WinGet.Client -Repository PSGallery -Force
+          Repair-WinGetPackageManager -AllUsers -Latest -Force
+          winget --version
+      - name: Validate and install the manifest
+        shell: pwsh
+        run: |
+          winget validate --manifest packaging/winget
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          winget settings --enable LocalManifestFiles
+          winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter NotVLC.exe | Select-Object -First 1
+          if (-not $exe) { throw "winget did not install NotVLC.exe" }
+          $icon = Join-Path $env:RUNNER_TEMP "icon.png"
+          Start-Process -FilePath $exe.FullName -ArgumentList @("--export-icon", $icon) -Wait -NoNewWindow
+          if (-not (Test-Path $icon)) { throw "NotVLC.exe did not run" }
+
+  winget-submit:
+    needs: [prepare, winget]
+    if: github.event_name != 'pull_request' && inputs.publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaging
+          path: packaging
+      - name: Open the winget-pkgs pull request
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VALIDATED: "1"
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::WINGET_TOKEN is not set, so no winget-pkgs pull request was opened."
+            exit 0
+          fi
+          # An artifact keeps no execute bit.
+          sh packaging/winget-submit.sh "$TAG"
+
+  record:
+    needs: [homebrew, aur, winget-submit]
+    if: github.event_name != 'pull_request' && inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Record the release in packaging/
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          packaging/bump.sh "$TAG"
+          git add packaging
+          if git diff --cached --quiet; then
+            echo "packaging/ already names $TAG."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Packaging: Homebrew, AUR and winget point at $TAG"
+          git push origin HEAD

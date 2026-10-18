@@ -2,7 +2,8 @@ name: Build
 
 # Packages NotVLC for macOS, Linux and Windows with the scripts in tools/.
 # Runs by hand (Actions > Build > Run workflow, or `gh workflow run build.yml`)
-# and on version tags; a tag also publishes the packages as a GitHub release.
+# and on version tags; a tag also publishes the packages as a GitHub release,
+# then updates the Homebrew cask, the AUR packages and the winget manifest.
 # Not on every push: macOS runners cost ten times the minutes on a private repo.
 
 on:
@@ -84,3 +85,13 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+
+  # Homebrew, the AUR and winget follow the release; see packaging/README.md.
+  packages:
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/packaging.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

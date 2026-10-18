@@ -8,6 +8,17 @@ All credit to the design goes to Juxtopposed.
 # ALL CODE IS AI GENERATED
 If you want to make improvements to this project, that is entirely welcome. I have to add this disclaimer otherwise I will be crucified by reddit. 
 
+## Install
+
+NotVLC needs VLC 3, which it plays through. Each package below brings it in or says how to get it.
+
+- **macOS** (Apple silicon): `brew install --cask liampalmqvist/notvlc/notvlc`
+- **Arch Linux**: `yay -S notvlc`, or `yay -S notvlc-bin` for the release binary
+- **Windows**: `winget install LiamPalmqvist.NotVLC`
+
+Or download a build from [Releases](https://github.com/LiamPalmqvist/NotVLC/releases).
+[`packaging/README.md`](packaging/README.md) describes how each is kept up to date.
+
 ## Prerequisites
 
 - Rust 1.90 or newer
@@ -15,7 +26,7 @@ If you want to make improvements to this project, that is entirely welcome. I ha
   `NOTVLC_LIBVLC` at another install if needed.
 - Optional, for the smoke test: `ffmpeg` on `PATH`.
 
-## Install and run
+## Run from source
 
 ```bash
 cargo run --release              # open the player

@@ -1,0 +1,40 @@
+# Maintainer: Liam Palmqvist <https://github.com/LiamPalmqvist>
+pkgname=notvlc
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Media player built on VLC's engine with a redesigned interface"
+arch=('x86_64' 'aarch64')
+url="https://github.com/LiamPalmqvist/NotVLC"
+license=('GPL-2.0-or-later')
+# libvlc and the windowing and graphics libraries are loaded at runtime.
+depends=('gcc-libs' 'glibc' 'hicolor-icon-theme' 'libvlc' 'vlc-plugins-all'
+         'libxkbcommon' 'wayland' 'libx11' 'libxcursor' 'libxrandr' 'libxi'
+         'vulkan-icd-loader' 'libglvnd')
+makedepends=('cargo')
+optdepends=('xdg-desktop-portal: file and folder pickers'
+            'libnotify: desktop notifications'
+            'xdg-utils: show a file in its folder')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('efd13549970f60fa9b5dedf8e9f8ebaa16105bd7baadd7947c321fd7514ca63e')
+
+prepare() {
+  cd "NotVLC-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "NotVLC-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  # The release binary, the desktop entry and the icon, laid out in dist/ as
+  # the Linux tarball has them.
+  sh tools/build-linux.sh
+}
+
+package() {
+  cd "NotVLC-$pkgver/dist/notvlc-$pkgver-linux-$CARCH"
+  install -Dm755 bin/notvlc "$pkgdir/usr/bin/notvlc"
+  install -Dm644 share/applications/org.notvlc.NotVLC.desktop -t "$pkgdir/usr/share/applications"
+  install -Dm644 share/icons/hicolor/256x256/apps/notvlc.png -t "$pkgdir/usr/share/icons/hicolor/256x256/apps"
+}
