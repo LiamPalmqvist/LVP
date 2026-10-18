@@ -117,7 +117,9 @@ jobs:
           install -d -m 700 ~/.ssh
           printf '%s\n' "$TAP_KEY" > ~/.ssh/tap
           chmod 600 ~/.ssh/tap
-          curl -fsSL https://api.github.com/meta | jq -r '.ssh_keys[] | "github.com " + .' > ~/.ssh/github_hosts
+          # GitHub's published ed25519 key: SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU. Pinned,
+          # because fetching it from api.github.com/meta hits the runner's anonymous rate limit.
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > ~/.ssh/github_hosts
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/tap -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/github_hosts"
           git clone git@github.com:LiamPalmqvist/homebrew-notvlc.git "$RUNNER_TEMP/tap"
           cp packaging/homebrew/notvlc.rb "$RUNNER_TEMP/tap/Casks/notvlc.rb"
