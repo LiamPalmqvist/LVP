@@ -59,6 +59,8 @@ skipped with a notice, and the rest still publish.
   Public Key* on aur.archlinux.org. The first push creates `notvlc` and `notvlc-bin` under that
   account. While the key is on no account (AUR registration is sometimes closed), the AUR refuses
   it: both packages are still built and tested, and the push is skipped with a warning.
+  AUR publishing is also switched off until the repository variable `AUR_PUBLISH` is `true`:
+  `gh variable set AUR_PUBLISH --body true -R LiamPalmqvist/NotVLC`.
 - **`WINGET_TOKEN`**: a classic personal access token with the `public_repo` scope. It forks
   microsoft/winget-pkgs and opens the pull requests. A fine-grained token cannot open a pull
   request on another owner's repository.

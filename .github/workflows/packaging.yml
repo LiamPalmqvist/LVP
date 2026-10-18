@@ -172,7 +172,13 @@ jobs:
         working-directory: packaging/aur/${{ matrix.pkg }}
         env:
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          # Off until the repository variable AUR_PUBLISH is set to true.
+          AUR_PUBLISH: ${{ vars.AUR_PUBLISH }}
         run: |
+          if [ "$AUR_PUBLISH" != true ]; then
+            echo "::notice::AUR publishing is off (repository variable AUR_PUBLISH), so ${{ matrix.pkg }} was built but not pushed."
+            exit 0
+          fi
           if [ -z "$AUR_SSH_KEY" ]; then
             echo "::notice::AUR_SSH_KEY is not set, so ${{ matrix.pkg }} was built but not pushed."
             exit 0
