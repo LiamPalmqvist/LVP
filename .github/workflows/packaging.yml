@@ -206,7 +206,6 @@ jobs:
       - name: Install winget
         shell: pwsh
         run: |
-          Install-PackageProvider -Name NuGet -Force | Out-Null
           Install-Module -Name Microsoft.WinGet.Client -Repository PSGallery -Force
           Repair-WinGetPackageManager -AllUsers -Latest -Force
           winget --version
