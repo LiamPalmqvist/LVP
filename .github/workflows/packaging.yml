@@ -182,7 +182,13 @@ jobs:
           chmod 600 ~/.ssh/aur
           # The AUR's published ed25519 key: SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4
           echo 'aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN' > ~/.ssh/aur_hosts
-          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aur -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/aur_hosts"
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/aur -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/aur_hosts -o BatchMode=yes"
+          # A key that is on no AUR account (registration can be closed) skips
+          # the push rather than failing the release.
+          if ! $GIT_SSH_COMMAND aur@aur.archlinux.org help >/dev/null 2>&1; then
+            echo "::warning::The AUR does not accept AUR_SSH_KEY; add its public key to an AUR account. ${{ matrix.pkg }} was built but not pushed."
+            exit 0
+          fi
           # A name the AUR does not have yet clones empty and is created by the push.
           git clone "ssh://aur@aur.archlinux.org/${{ matrix.pkg }}.git" /tmp/aur
           cp PKGBUILD /tmp/aur/PKGBUILD
@@ -232,8 +238,23 @@ jobs:
         run: |
           winget validate --manifest packaging/winget
           if ($LASTEXITCODE -ne 0) { exit 1 }
+          # winget's own scan of a local manifest's archive can report malware on
+          # a runner whose Defender is not fully running, so scan the release zip
+          # with Defender directly and name anything it finds.
+          $url = (Select-String -Path packaging/winget/*.installer.yaml -Pattern '^\s*InstallerUrl:\s*(\S+)').Matches[0].Groups[1].Value
+          $zip = Join-Path $env:RUNNER_TEMP "notvlc.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Get-MpComputerStatus | Format-List AMServiceEnabled, AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureVersion, AntivirusSignatureLastUpdated
+          try { Update-MpSignature -ErrorAction Stop } catch { Write-Warning "Defender signatures not updated: $_" }
+          & "$env:ProgramFiles\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $zip -DisableRemediation
+          $scan = $LASTEXITCODE
+          Get-MpThreatDetection | Format-List ThreatID, Resources, ActionSuccess
+          Get-MpThreat | Format-List ThreatName, SeverityID
+          # MpCmdRun exits 2 when it finds a threat; anything else non-zero means it could not scan.
+          if ($scan -eq 2) { throw "Windows Defender flags $url" }
+          if ($scan -ne 0) { Write-Warning "Windows Defender could not scan $url (MpCmdRun exit $scan)" }
           winget settings --enable LocalManifestFiles
-          winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+          winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity --ignore-local-archive-malware-scan
           if ($LASTEXITCODE -ne 0) { exit 1 }
           $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter NotVLC.exe | Select-Object -First 1
           if (-not $exe) { throw "winget did not install NotVLC.exe" }
