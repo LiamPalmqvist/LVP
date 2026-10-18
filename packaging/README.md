@@ -29,7 +29,9 @@ That workflow:
 2. tests each channel:
    - installs the cask from a local tap on macOS;
    - builds and installs both AUR packages in an Arch container;
-   - validates and installs the winget manifest on Windows;
+   - validates and installs the winget manifest on Windows. winget's own archive scan fails on
+     GitHub's runners, where Defender's real-time protection is off, so the job scans the zip
+     with Defender itself and fails only if Defender names a threat;
 3. publishes:
    - pushes the cask to the tap;
    - pushes both PKGBUILDs to the AUR;
@@ -55,7 +57,8 @@ skipped with a notice, and the rest still publish.
   `LiamPalmqvist/homebrew-notvlc`.
 - **`AUR_SSH_KEY`**: the private half of an SSH key whose public half is under *My Account > SSH
   Public Key* on aur.archlinux.org. The first push creates `notvlc` and `notvlc-bin` under that
-  account.
+  account. While the key is on no account (AUR registration is sometimes closed), the AUR refuses
+  it: both packages are still built and tested, and the push is skipped with a warning.
 - **`WINGET_TOKEN`**: a classic personal access token with the `public_repo` scope. It forks
   microsoft/winget-pkgs and opens the pull requests. A fine-grained token cannot open a pull
   request on another owner's repository.
