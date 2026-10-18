@@ -10,28 +10,69 @@ If you want to make improvements to this project, that is entirely welcome. I ha
 
 ## Install
 
-NotVLC needs VLC 3, which it plays through. Each package below brings it in or says how to get it.
+NotVLC plays everything through VLC's own engine, so it needs 64-bit VLC 3 installed alongside it.
+The packages below take care of that, or say how.
 
-- **macOS** (Apple silicon): `brew install --cask liampalmqvist/notvlc/notvlc`
-- **Arch Linux**: `yay -S notvlc`, or `yay -S notvlc-bin` for the release binary
-- **Windows**: `winget install LiamPalmqvist.NotVLC`
+### macOS (Apple silicon)
 
-Or download a build from [Releases](https://github.com/LiamPalmqvist/NotVLC/releases).
-[`packaging/README.md`](packaging/README.md) describes how each is kept up to date.
+```bash
+brew install --cask liampalmqvist/notvlc/notvlc
+```
 
-## Prerequisites
+The cask expects VLC in `/Applications` or `~/Applications`. If you don't have it yet, run
+`brew install --cask vlc` or get it from [videolan.org](https://www.videolan.org/vlc/).
+`brew upgrade --cask notvlc` updates NotVLC. `brew uninstall --cask --zap notvlc` removes it along
+with its settings and library.
 
-- Rust 1.90 or newer
-- VLC 3 installed (`/Applications/VLC.app` on macOS). NotVLC loads its libvlc at runtime; point
-  `NOTVLC_LIBVLC` at another install if needed.
-- Optional, for the smoke test: `ffmpeg` on `PATH`.
+### Arch Linux
 
-## Run from source
+```bash
+yay -S notvlc        # built from source
+yay -S notvlc-bin    # the release binary (x86_64)
+```
+
+Any AUR helper works. Both packages pull in `libvlc` and VLC's plugins.
+
+### Windows
+
+```powershell
+winget install LiamPalmqvist.NotVLC
+```
+
+winget installs 64-bit VLC with it. NotVLC is installed as a portable app, so start it by running
+`notvlc` in a terminal; it doesn't add a Start menu entry yet.
+
+### Any other system, or by hand
+
+Every [release](https://github.com/LiamPalmqvist/NotVLC/releases) has a build for each system:
+
+- **macOS**: `notvlc-<version>-macos-arm64.zip`. Unzip it and move `NotVLC.app` to Applications.
+  The app isn't notarized, so clear the download's quarantine flag before the first launch:
+  `xattr -dr com.apple.quarantine /Applications/NotVLC.app`.
+- **Linux** (x86_64): `notvlc-<version>-linux-x86_64.tar.gz`. Unpack it and run `./install.sh`,
+  which installs to `~/.local`; `sudo PREFIX=/usr/local ./install.sh` installs it for every user.
+  Install VLC 3 from your distribution too (for example `sudo apt install vlc`).
+- **Windows** (x64): `notvlc-<version>-windows-x64.zip`. Unzip it and run `NotVLC.exe`, with 64-bit
+  VLC 3 from [videolan.org](https://www.videolan.org/vlc/) installed.
+
+NotVLC looks for VLC in its usual install location on each system. If yours is elsewhere, set
+`NOTVLC_LIBVLC` to the folder that holds libvlc.
+
+[`packaging/README.md`](packaging/README.md) describes how the packages are built and kept up to
+date with each release.
+
+## Build from source
+
+You need Rust 1.90 or newer and VLC 3 (`/Applications/VLC.app` on macOS; see above for
+`NOTVLC_LIBVLC`). The smoke test also uses `ffmpeg` on `PATH` if it is there.
 
 ```bash
 cargo run --release              # open the player
 cargo run --release -- movie.mkv # open files directly
 ```
+
+`tools/bundle-macos.sh`, `tools/build-linux.sh` and `tools/build-windows.ps1` build the same
+packages a release ships.
 
 ## Test
 
