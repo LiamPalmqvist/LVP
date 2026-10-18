@@ -1,6 +1,6 @@
 #!/bin/sh
-# Builds dist/NotVLC.app: release binary, icon from the design's cone, and an
-# Info.plist that registers NotVLC for video, audio, playlist and subtitle
+# Builds dist/NotVLC.app: release binary, icon from the design's cone, the licence
+# and an Info.plist that registers NotVLC for video, audio, playlist and subtitle
 # files so Finder offers "Open With NotVLC".
 #
 # usage: tools/bundle-macos.sh [--debug]
@@ -82,6 +82,7 @@ cat <<PLIST
 PLIST
 } > "$app/Contents/Info.plist"
 plutil -lint "$app/Contents/Info.plist" >/dev/null
+cp LICENSE "$app/Contents/Resources/LICENSE"
 
 codesign --force --deep --sign - "$app" 2>/dev/null || true
 echo "$app"
