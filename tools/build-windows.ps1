@@ -1,5 +1,5 @@
 # Builds NotVLC for Windows and packs it as dist\notvlc-<version>-windows-<arch>.zip:
-# NotVLC.exe, its icon as a PNG, and a README.
+# NotVLC.exe, its icon as a PNG, a README and the licence.
 #
 # usage (from a PowerShell prompt in the repository):
 #   powershell -ExecutionPolicy Bypass -File tools\build-windows.ps1 [-DebugBuild]
@@ -55,6 +55,7 @@ contains libvlc.dll.
 
 Settings and the library are stored in %APPDATA%\NotVLC\NotVLC.
 "@ | Set-Content -Encoding UTF8 (Join-Path $stage "README.txt")
+Copy-Item LICENSE (Join-Path $stage "LICENSE.txt")
 
 $zip = "dist\$name.zip"
 if (Test-Path $zip) { Remove-Item -Force $zip }

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds NotVLC for Linux and packs it as dist/notvlc-<version>-linux-<arch>.tar.gz:
-# the binary, a desktop entry, an icon and install.sh.
+# the binary, a desktop entry, an icon, install.sh and the licence.
 #
 # usage: tools/build-linux.sh [--install-deps] [--debug]
 #   --install-deps  install build tools and runtime libraries (VLC 3, graphics,
@@ -120,6 +120,7 @@ command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t 
 echo "Installed NotVLC to $prefix (run: $prefix/bin/notvlc)"
 INSTALL
 chmod +x "$stage/install.sh"
+cp LICENSE "$stage/LICENSE"
 
 tar -C dist -czf "dist/$name.tar.gz" "$name"
 echo "dist/$name.tar.gz"

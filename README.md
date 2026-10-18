@@ -92,5 +92,6 @@ The design file lives in `design/`; see `tools/fig/README.md` for rendering its 
 
 ## Licence
 
-GPL-2.0-or-later, matching libvlc. Inter and DM Mono are under the SIL Open Font License (see
-`assets/fonts`).
+GPL-2.0-or-later, the same as VLC: version 2 of the GNU General Public License, in
+[LICENSE](LICENSE), or any later version. Inter and DM Mono are under the SIL Open Font
+License (see `assets/fonts`).
