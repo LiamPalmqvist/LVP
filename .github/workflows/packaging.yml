@@ -84,6 +84,10 @@ jobs:
           name: packaging
           path: packaging
       - name: Install from a local tap
+        env:
+          # brew audit --online reads the GitHub API; anonymously, a runner shares
+          # its rate limit with every other job on the same address.
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
         run: |
           brew update --quiet
           brew tap-new --no-git notvlc/ci
