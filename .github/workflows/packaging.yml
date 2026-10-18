@@ -238,9 +238,9 @@ jobs:
         run: |
           winget validate --manifest packaging/winget
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          # winget's own scan of a local manifest's archive can report malware on
-          # a runner whose Defender is not fully running, so scan the release zip
-          # with Defender directly and name anything it finds.
+          # winget's own scan of a local manifest's archive reports malware when
+          # Defender's real-time protection is off, as it is on these runners, so
+          # scan the release zip with Defender directly and name anything it finds.
           $url = (Select-String -Path packaging/winget/*.installer.yaml -Pattern '^\s*InstallerUrl:\s*(\S+)').Matches[0].Groups[1].Value
           $zip = Join-Path $env:RUNNER_TEMP "notvlc.zip"
           Invoke-WebRequest -Uri $url -OutFile $zip
@@ -254,6 +254,7 @@ jobs:
           if ($scan -eq 2) { throw "Windows Defender flags $url" }
           if ($scan -ne 0) { Write-Warning "Windows Defender could not scan $url (MpCmdRun exit $scan)" }
           winget settings --enable LocalManifestFiles
+          winget settings --enable LocalArchiveMalwareScanOverride
           winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity --ignore-local-archive-malware-scan
           if ($LASTEXITCODE -ne 0) { exit 1 }
           $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter NotVLC.exe | Select-Object -First 1
