@@ -61,11 +61,11 @@ impl Instance {
         if ptr.is_null() {
             return Err(anyhow!("libvlc_new failed: {}", last_error(&api)));
         }
-        let name = cstring("NotVLC");
-        let http = cstring(&format!("NotVLC/{} LibVLC/{}", env!("CARGO_PKG_VERSION"), version(&api)));
-        let id = cstring("org.notvlc.NotVLC");
+        let name = cstring("LVP");
+        let http = cstring(&format!("LVP/{} LibVLC/{}", env!("CARGO_PKG_VERSION"), version(&api)));
+        let id = cstring("org.lvp.LVP");
         let ver = cstring(env!("CARGO_PKG_VERSION"));
-        let icon = cstring("vlc");
+        let icon = cstring("lvp");
         unsafe {
             (api.libvlc_set_user_agent)(ptr, name.as_ptr(), http.as_ptr());
             (api.libvlc_set_app_id)(ptr, id.as_ptr(), ver.as_ptr(), icon.as_ptr());

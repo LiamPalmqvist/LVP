@@ -7,10 +7,10 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::{Duration, Instant};
 
-use notvlc::app::ports::{EngineCommand, MediaEngine, MediaProbe, OpenRequest, PlayerState};
-use notvlc::domain::media::{MediaItem, MediaSource};
-use notvlc::domain::settings::Settings;
-use notvlc::infra::vlc::{VlcEngine, VlcProbe};
+use lvp::app::ports::{EngineCommand, MediaEngine, MediaProbe, OpenRequest, PlayerState};
+use lvp::domain::media::{MediaItem, MediaSource};
+use lvp::domain::settings::Settings;
+use lvp::infra::vlc::{VlcEngine, VlcProbe};
 
 fn make_clip(dir: &std::path::Path) -> Option<PathBuf> {
     let out = dir.join("clip.mp4");

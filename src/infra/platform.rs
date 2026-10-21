@@ -34,7 +34,7 @@ fn sleep_inhibitor() -> Option<Child> {
     } else if cfg!(target_os = "linux") {
         quiet(Command::new("systemd-inhibit").args([
             "--what=idle:sleep",
-            "--who=NotVLC",
+            "--who=LVP",
             "--why=Playing video",
             "--mode=block",
             "sleep",
@@ -62,7 +62,7 @@ impl SystemHooks for SystemIntegration {
             let script = format!("display notification \"{}\" with title \"{}\"", esc(body), esc(title));
             quiet(Command::new("osascript").args(["-e", &script]));
         } else if cfg!(target_os = "linux") {
-            quiet(Command::new("notify-send").args(["--app-name=NotVLC", "--icon=notvlc", title, body]));
+            quiet(Command::new("notify-send").args(["--app-name=LVP", "--icon=lvp", title, body]));
         }
     }
 }

@@ -17,7 +17,7 @@ pub struct SystemMediaControls {
 impl SystemMediaControls {
     /// Must be called on the main thread.
     pub fn new() -> Option<Self> {
-        let config = PlatformConfig { dbus_name: "notvlc", display_name: "NotVLC", hwnd: None };
+        let config = PlatformConfig { dbus_name: "lvp", display_name: "LVP", hwnd: None };
         let mut inner = souvlaki::MediaControls::new(config).ok()?;
         let (tx, rx) = unbounded();
         inner

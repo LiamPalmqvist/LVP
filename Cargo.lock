@@ -2407,6 +2407,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
+name = "lvp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "block2 0.6.2",
+ "crossbeam-channel",
+ "directories",
+ "eframe",
+ "egui",
+ "egui-wgpu",
+ "egui_kittest",
+ "env_logger",
+ "fastrand 2.5.0",
+ "image",
+ "libc",
+ "libloading 0.9.0",
+ "log",
+ "objc2 0.6.5",
+ "objc2-foundation 0.3.2",
+ "open",
+ "parking_lot",
+ "percent-encoding",
+ "quick-xml 0.38.4",
+ "raw-window-handle",
+ "resvg",
+ "rfd",
+ "serde",
+ "serde_json",
+ "souvlaki",
+ "tempfile",
+ "url",
+ "walkdir",
+]
+
+[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2566,41 +2601,6 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
-
-[[package]]
-name = "notvlc"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "block2 0.6.2",
- "crossbeam-channel",
- "directories",
- "eframe",
- "egui",
- "egui-wgpu",
- "egui_kittest",
- "env_logger",
- "fastrand 2.5.0",
- "image",
- "libc",
- "libloading 0.9.0",
- "log",
- "objc2 0.6.5",
- "objc2-foundation 0.3.2",
- "open",
- "parking_lot",
- "percent-encoding",
- "quick-xml 0.38.4",
- "raw-window-handle",
- "resvg",
- "rfd",
- "serde",
- "serde_json",
- "souvlaki",
- "tempfile",
- "url",
- "walkdir",
-]
 
 [[package]]
 name = "num-traits"

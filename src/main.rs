@@ -6,15 +6,15 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use notvlc::app::App;
-use notvlc::app::ports::Store;
-use notvlc::domain::settings::Settings;
-use notvlc::infra::store::JsonStore;
-use notvlc::infra::vlc::{VlcEngine, VlcProbe};
-use notvlc::ui::NotVlcApp;
+use lvp::app::App;
+use lvp::app::ports::Store;
+use lvp::domain::settings::Settings;
+use lvp::infra::store::JsonStore;
+use lvp::infra::vlc::{VlcEngine, VlcProbe};
+use lvp::ui::LvpApp;
 
 fn window_icon() -> Option<egui::IconData> {
-    let svg = notvlc::ui::icons::Icon::Vlc.svg().replace("rgb(211,121,24)", "rgb(255,136,0)");
+    let svg = lvp::ui::icons::Icon::Logo.svg().replace("rgb(211,121,24)", "rgb(255,136,0)");
     let tree = resvg::usvg::Tree::from_str(&svg, &resvg::usvg::Options::default()).ok()?;
     let mut pm = resvg::tiny_skia::Pixmap::new(256, 256)?;
     let k = 256.0 / tree.size().width();
@@ -34,10 +34,10 @@ fn window_icon() -> Option<egui::IconData> {
 
 fn main() -> eframe::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
-    // Packaging helper: `notvlc --export-icon out.png` writes the app icon.
+    // Packaging helper: `lvp --export-icon out.png` writes the app icon.
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("--export-icon") {
-        let out = args.get(2).cloned().unwrap_or_else(|| "notvlc.png".into());
+        let out = args.get(2).cloned().unwrap_or_else(|| "lvp.png".into());
         let icon = window_icon().expect("icon renders");
         image::RgbaImage::from_raw(icon.width, icon.height, icon.rgba)
             .expect("icon buffer")
@@ -58,22 +58,22 @@ fn main() -> eframe::Result {
             .load("settings")
             .and_then(|s| serde_json::from_str::<Settings>(&s).ok())
             .is_some_and(|s| s.library.one_instance || (s.library.one_instance_from_file_manager && !files.is_empty()));
-        if one && notvlc::infra::single_instance::forward(&store.data_dir(), &files) {
+        if one && lvp::infra::single_instance::forward(&store.data_dir(), &files) {
             return Ok(());
         }
-        let _ = notvlc::infra::single_instance::listen(&store.data_dir(), inbox_tx.clone());
+        let _ = lvp::infra::single_instance::listen(&store.data_dir(), inbox_tx.clone());
     }
     #[cfg(target_os = "macos")]
-    notvlc::infra::macos_open::install(inbox_tx);
+    lvp::infra::macos_open::install(inbox_tx);
     let settings: Settings = store.load("settings").and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     let engine = match VlcEngine::new(&settings) {
         Ok(e) => Arc::new(e),
         Err(e) => {
             rfd::MessageDialog::new()
                 .set_level(rfd::MessageLevel::Error)
-                .set_title("NotVLC needs VLC")
+                .set_title("LVP needs VLC")
                 .set_description(format!(
-                    "NotVLC plays media through VLC's engine (libvlc 3), which could not be loaded.\n\n{e:#}\n\nInstall VLC from videolan.org, or set NOTVLC_LIBVLC to the folder that contains libvlc."
+                    "LVP plays media through VLC's engine (libvlc 3), which could not be loaded.\n\n{e:#}\n\nInstall VLC from videolan.org, or set LVP_LIBVLC to the folder that contains libvlc."
                 ))
                 .show();
             std::process::exit(1);
@@ -81,7 +81,7 @@ fn main() -> eframe::Result {
     };
     let probe = Arc::new(VlcProbe::new(engine.helper()));
     let mut app = App::new(engine, probe, store);
-    app.set_system_hooks(Arc::new(notvlc::infra::platform::SystemIntegration::new()));
+    app.set_system_hooks(Arc::new(lvp::infra::platform::SystemIntegration::new()));
     app.set_inbox(inbox_rx);
 
     let size = app
@@ -93,7 +93,7 @@ fn main() -> eframe::Result {
     let remember = app.settings.interface.remember_window;
     let mut viewport = egui::ViewportBuilder::default()
         .with_title("VLC Media Player")
-        .with_app_id("org.notvlc.NotVLC")
+        .with_app_id("org.lvp.LVP")
         .with_inner_size(size)
         .with_min_inner_size([640.0, 400.0])
         // macOS keeps its native frame (corners, shadow, traffic lights) with the
@@ -115,17 +115,17 @@ fn main() -> eframe::Result {
         persist_window: false,
         ..Default::default()
     };
-    if let Some(c) = notvlc::infra::media_controls::SystemMediaControls::new() {
+    if let Some(c) = lvp::infra::media_controls::SystemMediaControls::new() {
         app.set_media_controls(Box::new(c));
     }
     eframe::run_native(
-        "NotVLC",
+        "LVP",
         options,
         Box::new(move |cc| {
             #[allow(unused_mut)]
-            let mut ui = NotVlcApp::new(&cc.egui_ctx, app, files);
+            let mut ui = LvpApp::new(&cc.egui_ctx, app, files);
             #[cfg(target_os = "macos")]
-            if let Some(mut lights) = notvlc::infra::macos_window::TrafficLights::new(cc) {
+            if let Some(mut lights) = lvp::infra::macos_window::TrafficLights::new(cc) {
                 ui.set_native_titlebar(Box::new(move |height, shown| lights.place(height as f64, shown)));
             }
             Ok(Box::new(ui))

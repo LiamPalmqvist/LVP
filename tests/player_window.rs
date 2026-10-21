@@ -7,27 +7,27 @@ use std::sync::Arc;
 
 use egui::{Event, Key, Modifiers};
 use egui_kittest::Harness;
-use notvlc::app::App;
-use notvlc::app::fake::{FakeEngine, FakeProbe};
-use notvlc::domain::media::MediaItem;
-use notvlc::infra::store::JsonStore;
-use notvlc::ui::NotVlcApp;
-use notvlc::ui::state::View;
+use lvp::app::App;
+use lvp::app::fake::{FakeEngine, FakeProbe};
+use lvp::domain::media::MediaItem;
+use lvp::infra::store::JsonStore;
+use lvp::ui::LvpApp;
+use lvp::ui::state::View;
 
-fn harness(dir: &std::path::Path) -> Harness<'static, NotVlcApp> {
+fn harness(dir: &std::path::Path) -> Harness<'static, LvpApp> {
     let store = Arc::new(JsonStore::at(dir.join("data"), dir.join("cache")));
     let mut app = App::new(Arc::new(FakeEngine::new()), Arc::new(FakeProbe), store);
     app.settings.general.onboarding_done = true;
     app.play_items(vec![MediaItem::file("/media/clip.mp4")], 0, None);
     let mut h = Harness::builder()
         .with_size(egui::vec2(1280.0, 800.0))
-        .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+        .build_eframe(|cc| LvpApp::new(&cc.egui_ctx, app, Vec::new()));
     h.state_mut().st.view = View::Player;
     h.run_steps(2);
     h
 }
 
-fn press(h: &mut Harness<'static, NotVlcApp>, key: Key, modifiers: Modifiers) {
+fn press(h: &mut Harness<'static, LvpApp>, key: Key, modifiers: Modifiers) {
     for pressed in [true, false] {
         h.event(Event::Key { key, physical_key: None, pressed, repeat: false, modifiers });
     }
@@ -81,7 +81,7 @@ fn going_home_leaves_fullscreen() {
     let mut h = harness(dir.path());
     press(&mut h, Key::F, Modifiers::NONE);
     assert!(h.state().st.fullscreen);
-    h.state_mut().st.navigate(notvlc::ui::pages::Page::Home);
+    h.state_mut().st.navigate(lvp::ui::pages::Page::Home);
     h.run_steps(2);
     let st = &h.state().st;
     assert_eq!(st.view, View::Library);
@@ -100,22 +100,22 @@ fn closing_the_mini_player_after_visiting_the_player_dismisses_it() {
     app.play_items(vec![MediaItem::file("/media/a.mp4"), MediaItem::file("/media/b.mp4")], 1, None);
     let mut h = Harness::builder()
         .with_size(egui::vec2(1280.0, 800.0))
-        .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+        .build_eframe(|cc| LvpApp::new(&cc.egui_ctx, app, Vec::new()));
     h.state_mut().st.view = View::Library;
     h.run_steps(2);
     h.state_mut().st.view = View::Player;
     h.run_steps(2);
-    h.state_mut().st.navigate(notvlc::ui::pages::Page::Home);
+    h.state_mut().st.navigate(lvp::ui::pages::Page::Home);
     h.run_steps(2);
     assert_eq!(h.state().st.view, View::Library);
     assert!(h.state().st.music.mini_closed.is_none(), "the mini player shows at home");
 
     let s = h.state_mut();
-    notvlc::ui::music::close_miniplayer(&mut s.app, &mut s.st);
+    lvp::ui::music::close_miniplayer(&mut s.app, &mut s.st);
     // libvlc reports the stop a frame or two later: the status still says playing.
-    engine.status.lock().state = notvlc::app::ports::PlayerState::Playing;
+    engine.status.lock().state = lvp::app::ports::PlayerState::Playing;
     h.run_steps(3);
-    engine.status.lock().state = notvlc::app::ports::PlayerState::Stopped;
+    engine.status.lock().state = lvp::app::ports::PlayerState::Stopped;
     h.run_steps(3);
     assert!(h.state().st.music.mini_closed.is_some(), "dismissed, not left showing the replay button");
 

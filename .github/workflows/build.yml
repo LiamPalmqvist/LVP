@@ -1,6 +1,6 @@
 name: Build
 
-# Packages NotVLC for macOS, Linux and Windows with the scripts in tools/.
+# Packages LVP for macOS, Linux and Windows with the scripts in tools/.
 # Runs by hand (Actions > Build > Run workflow, or `gh workflow run build.yml`)
 # and on version tags; a tag also publishes the packages as a GitHub release,
 # then updates the Homebrew cask, the AUR packages and the winget manifest.
@@ -23,13 +23,13 @@ jobs:
         with:
           toolchain: "1.90.0"
       - uses: Swatinem/rust-cache@v2
-      # The bundle script draws the app icon with rsvg-convert and ImageMagick.
-      - run: brew install librsvg imagemagick
+      # The bundle script draws the app icon with rsvg-convert.
+      - run: brew install librsvg
       - run: tools/bundle-macos.sh
       - name: Zip the app
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          ditto -c -k --keepParent dist/NotVLC.app "dist/notvlc-$version-macos-arm64.zip"
+          ditto -c -k --keepParent dist/LVP.app "dist/lvp-$version-macos-arm64.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: macos-arm64

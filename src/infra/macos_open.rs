@@ -30,7 +30,7 @@ const DIRECT_OBJECT: u32 = four(b"----");
 
 define_class!(
     #[unsafe(super(NSObject))]
-    #[name = "NotVlcOpenDocumentsHandler"]
+    #[name = "LvpOpenDocumentsHandler"]
     struct OpenHandler;
 
     impl OpenHandler {

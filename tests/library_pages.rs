@@ -7,14 +7,14 @@ use std::time::Duration;
 
 use egui::{Event, Key, Modifiers, PointerButton, Pos2, pos2};
 use egui_kittest::Harness;
-use notvlc::app::App;
-use notvlc::app::fake::{FakeEngine, FakeProbe};
-use notvlc::infra::store::JsonStore;
-use notvlc::ui::NotVlcApp;
-use notvlc::ui::pages::Page;
-use notvlc::ui::state::View;
+use lvp::app::App;
+use lvp::app::fake::{FakeEngine, FakeProbe};
+use lvp::infra::store::JsonStore;
+use lvp::ui::LvpApp;
+use lvp::ui::pages::Page;
+use lvp::ui::state::View;
 
-fn harness(home: &Path) -> Harness<'static, NotVlcApp> {
+fn harness(home: &Path) -> Harness<'static, LvpApp> {
     let season = home.join("Videos/Shows/S01");
     std::fs::create_dir_all(&season).unwrap();
     for n in ["E1.mp4", "E2.mp4"] {
@@ -26,14 +26,14 @@ fn harness(home: &Path) -> Harness<'static, NotVlcApp> {
     app.settings.library.video_folders = vec![home.join("Videos")];
     let mut h = Harness::builder()
         .with_size(egui::vec2(1920.0, 1080.0))
-        .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+        .build_eframe(|cc| LvpApp::new(&cc.egui_ctx, app, Vec::new()));
     h.state_mut().st.view = View::Library;
     h.state_mut().st.page = Page::Videos;
     h.run_steps(3);
     h
 }
 
-fn click(h: &mut Harness<'static, NotVlcApp>, pos: Pos2) {
+fn click(h: &mut Harness<'static, LvpApp>, pos: Pos2) {
     h.event(Event::PointerMoved(pos));
     h.step();
     let press =
@@ -45,7 +45,7 @@ fn click(h: &mut Harness<'static, NotVlcApp>, pos: Pos2) {
 }
 
 /// Past the guard that ignores clicks right after a page opens.
-fn settle(h: &mut Harness<'static, NotVlcApp>) {
+fn settle(h: &mut Harness<'static, LvpApp>) {
     std::thread::sleep(Duration::from_millis(450));
     h.run_steps(1);
 }

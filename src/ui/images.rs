@@ -25,7 +25,7 @@ const MAX_SIDE: u32 = 640;
 
 fn loader(ctx: &Context) -> Arc<Mutex<Loader>> {
     ctx.data_mut(|d| {
-        d.get_temp_mut_or_insert_with(Id::new("notvlc-image-loader"), || {
+        d.get_temp_mut_or_insert_with(Id::new("lvp-image-loader"), || {
             let (req_tx, req_rx) = unbounded::<PathBuf>();
             let (res_tx, res_rx) = unbounded();
             for i in 0..2 {

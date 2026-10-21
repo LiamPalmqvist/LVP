@@ -1,14 +1,16 @@
 #!/bin/sh
-# Builds NotVLC for Linux and packs it as dist/notvlc-<version>-linux-<arch>.tar.gz:
-# the binary, a desktop entry, an icon, install.sh and the licence.
+# Builds LVP for Linux and packs it as dist/lvp-<version>-linux-<arch>.tar.gz:
+# the binary, a desktop entry, an icon, licences and install.sh.
 #
 # usage: tools/build-linux.sh [--install-deps] [--debug]
 #   --install-deps  install build tools and runtime libraries (VLC 3, graphics,
 #                   portals) with apt, dnf, pacman or zypper, using sudo
 #   --debug         package a debug build instead of a release build
 #
-# NotVLC needs VLC 3's libvlc at runtime (libvlc.so.5 and its plugins). It is
-# found in the usual system locations, or set NOTVLC_LIBVLC to its folder.
+# LVP needs VLC 3's libvlc at runtime (libvlc.so.5 and its plugins). It is
+# found in the usual system locations, or set LVP_LIBVLC to its folder.
+# Unlike the macOS and Windows packages, this one does not bundle libvlc: Linux
+# packages (the AUR among them) are expected to use the distribution's.
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -18,7 +20,7 @@ for arg in "$@"; do
     case "$arg" in
         --install-deps) install_deps=1 ;;
         --debug) profile=debug ;;
-        -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
         *) echo "unknown option: $arg" >&2; exit 2 ;;
     esac
 done
@@ -72,55 +74,57 @@ found_vlc=0
 for dir in /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu /usr/local/lib; do
     [ -e "$dir/libvlc.so.5" ] && found_vlc=1
 done
-if [ "$found_vlc" = 0 ] && [ -z "${NOTVLC_LIBVLC:-}" ]; then
-    echo "warning: libvlc.so.5 was not found. Install VLC 3 (or run with --install-deps) before starting NotVLC." >&2
+if [ "$found_vlc" = 0 ] && [ -z "${LVP_LIBVLC:-}" ]; then
+    echo "warning: libvlc.so.5 was not found. Install VLC 3 (or run with --install-deps) before starting LVP." >&2
 fi
 
 version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-name="notvlc-$version-linux-$(uname -m)"
+name="lvp-$version-linux-$(uname -m)"
 stage="dist/$name"
 rm -rf "$stage"
-mkdir -p "$stage/bin" "$stage/share/applications" "$stage/share/icons/hicolor/256x256/apps"
+mkdir -p "$stage/bin" "$stage/share/applications" "$stage/share/icons/hicolor/256x256/apps" \
+    "$stage/share/licenses/lvp"
 
-cp "target/$profile/notvlc" "$stage/bin/notvlc"
-[ "$profile" = release ] && strip "$stage/bin/notvlc" 2>/dev/null || true
-"$stage/bin/notvlc" --export-icon "$stage/share/icons/hicolor/256x256/apps/notvlc.png"
+cp "target/$profile/lvp" "$stage/bin/lvp"
+[ "$profile" = release ] && strip "$stage/bin/lvp" 2>/dev/null || true
+"$stage/bin/lvp" --export-icon "$stage/share/icons/hicolor/256x256/apps/lvp.png"
+# Licence texts travel with the binary, as the GPL and the fonts' OFL require.
+cp LICENSE assets/fonts/Inter-OFL.txt assets/fonts/DMMono-OFL.txt "$stage/share/licenses/lvp/"
 
 # Wayland matches windows to desktop entries by app id, so the file is named after it.
-cat > "$stage/share/applications/org.notvlc.NotVLC.desktop" <<'DESKTOP'
+cat > "$stage/share/applications/org.lvp.LVP.desktop" <<'DESKTOP'
 [Desktop Entry]
 Type=Application
-Name=NotVLC
+Name=LVP
 GenericName=Media Player
 Comment=Play videos, music, discs and network streams with VLC's engine
-Exec=notvlc %F
-Icon=notvlc
+Exec=lvp %F
+Icon=lvp
 Terminal=false
 Categories=AudioVideo;Player;Video;Audio;
 Keywords=video;music;player;movie;vlc;dvd;stream;subtitles;
-StartupWMClass=org.notvlc.NotVLC
+StartupWMClass=org.lvp.LVP
 MimeType=video/mp4;video/x-matroska;video/webm;video/x-msvideo;video/quicktime;video/mpeg;video/x-flv;video/x-ms-wmv;video/3gpp;video/mp2t;video/ogg;video/x-m4v;audio/mpeg;audio/mp4;audio/flac;audio/x-flac;audio/ogg;audio/opus;audio/x-wav;audio/wav;audio/aac;audio/x-ms-wma;audio/x-matroska;audio/webm;audio/x-aiff;application/x-mpegurl;audio/x-mpegurl;audio/x-scpls;application/xspf+xml;application/x-cd-image;
 DESKTOP
 
 cat > "$stage/install.sh" <<'INSTALL'
 #!/bin/sh
-# Installs NotVLC into PREFIX (default ~/.local). For every user:
+# Installs LVP into PREFIX (default ~/.local). For every user:
 #   sudo PREFIX=/usr/local ./install.sh
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 prefix=${PREFIX:-$HOME/.local}
 mkdir -p "$prefix/bin" "$prefix/share/applications" "$prefix/share/icons/hicolor/256x256/apps"
-cp "$here/bin/notvlc" "$prefix/bin/notvlc"
-chmod 755 "$prefix/bin/notvlc"
-cp "$here/share/icons/hicolor/256x256/apps/notvlc.png" "$prefix/share/icons/hicolor/256x256/apps/notvlc.png"
-sed "s|^Exec=notvlc|Exec=$prefix/bin/notvlc|" "$here/share/applications/org.notvlc.NotVLC.desktop" \
-    > "$prefix/share/applications/org.notvlc.NotVLC.desktop"
+cp "$here/bin/lvp" "$prefix/bin/lvp"
+chmod 755 "$prefix/bin/lvp"
+cp "$here/share/icons/hicolor/256x256/apps/lvp.png" "$prefix/share/icons/hicolor/256x256/apps/lvp.png"
+sed "s|^Exec=lvp|Exec=$prefix/bin/lvp|" "$here/share/applications/org.lvp.LVP.desktop" \
+    > "$prefix/share/applications/org.lvp.LVP.desktop"
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database -q "$prefix/share/applications" || true
 command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t "$prefix/share/icons/hicolor" || true
-echo "Installed NotVLC to $prefix (run: $prefix/bin/notvlc)"
+echo "Installed LVP to $prefix (run: $prefix/bin/lvp)"
 INSTALL
 chmod +x "$stage/install.sh"
-cp LICENSE "$stage/LICENSE"
 
 tar -C dist -czf "dist/$name.tar.gz" "$name"
 echo "dist/$name.tar.gz"

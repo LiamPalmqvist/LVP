@@ -1,4 +1,4 @@
-# Implementation status: NotVLC
+# Implementation status: LVP
 
 **Last updated:** 2026-10-16
 
@@ -12,7 +12,7 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done · `[!]` blo
 
 ## End goal
 
-A user can install VLC 3, run NotVLC, and do everything they could do in VLC media player (play any
+A user can install VLC 3, run LVP, and do everything they could do in VLC media player (play any
 file, disc or stream; pick tracks and subtitles; sync audio and subtitles; apply VLC's audio and
 video effects; manage a queue and playlists; browse local and network media; record, snapshot,
 convert and cast; configure every preference) through an interface that matches the design file
@@ -260,7 +260,7 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 | VLC's skins (`.vlt`) | The skins2 interface is a separate GUI; the setting is kept but has no effect |
 | Wallpaper mode | Windows-only in VLC |
 | Program (service ID) selection | libvlc 3 has no API for it; revisit with libvlc 4 |
-| VLC's web interface | It controls VLC's internal playlist, not a libvlc player; a NotVLC remote would be new work |
+| VLC's web interface | It controls VLC's internal playlist, not a libvlc player; a LVP remote would be new work |
 
 ---
 
@@ -273,10 +273,14 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 - [x] System integration: media keys and Now Playing, single instance, display sleep prevention,
       track notifications
 - [x] CI pipeline: `.github/workflows/ci.yml` runs fmt, clippy and tests on Linux (libvlc tests skip there)
-- [x] Release / packaging: `tools/bundle-macos.sh` builds `dist/NotVLC.app` with document types; files
+- [x] Release / packaging: `tools/bundle-macos.sh` builds `dist/LVP.app` with document types; files
       opened from Finder reach the queue (Apple Events, `infra/macos_open.rs`); `tools/build-linux.sh`
       and `tools/build-windows.ps1` package Linux and Windows; the Build workflow runs all three on
       demand and on `v*` tags, which also publish a GitHub release
+- [x] Bundled engine: the macOS and Windows packages carry VLC's libvlc, plugins and Lua scripts from
+      the release pinned (with checksums) in `tools/vlc-release.txt`, found first by
+      `infra/vlc/ffi.rs`, so they run without VLC installed; licence texts and the VLC notice
+      (`licenses/`) ship in every package. Linux packages keep using the distribution's libvlc
 
 ---
 
@@ -284,6 +288,7 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 
 | # | Question | Blocks | Raised |
 |---|---|---|---|
+| 1 | LVP's logo: `assets/icons/logo.svg` is a placeholder (play symbol on an orange tile) | App icon, title bar, About, onboarding, empty player | 2026-10-21 |
 
 ---
 
@@ -297,4 +302,6 @@ Create and edit Convert profiles (codec, bitrate, container) as in the Profiles 
 | 2026-10-17 | macOS keeps its native window frame | The design's window buttons and square corners looked foreign on macOS; the app's bar sits under a transparent title bar and the traffic lights are moved into it (`infra/macos_window.rs`) |
 | 2026-10-13 | UI: eframe/egui 0.33 with wgpu | Custom-drawn design kit; native wgpu texture for video. 0.33 is the newest that builds on Rust 1.90 |
 | 2026-10-13 | Video via vmem callbacks, geometry in our renderer | Works with any GPU backend; aspect/crop/zoom stay consistent |
+| 2026-10-21 | Renamed NotVLC to LVP (Liam's Video Player) and dropped VLC's cone logo | "VLC" and the cone are VideoLAN's trademarks. "Viddy" was taken: sachaos/viddy owns it on Homebrew and the AUR. The data and cache directories move from the old name on first start (`infra/store.rs`); env vars are now `LVP_LIBVLC` and `LVP_HOME` |
+| 2026-10-21 | Bundle libvlc in the macOS and Windows packages, not on Linux | VLC is GPL-2.0-or-later and libvlc LGPL-2.1-or-later, both compatible with LVP's GPL-2.0-or-later, so shipping VideoLAN's binaries only needs the licence texts and a source link. Homebrew casks and winget allow bundled engines; Arch packaging expects the distribution's `libvlc` and plugin packages |
 | 2026-10-16 | Software decoding while subtitles are shown (hardware decoding on Automatic) | VLC 3 cannot draw subtitles onto VideoToolbox pictures through vmem; files with subtitles open in software mode and turning subtitles on reopens in place |

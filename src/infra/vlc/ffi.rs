@@ -653,61 +653,107 @@ impl CoreApi {
     }
 }
 
-/// Where a usable libvlc lives: the library file and its plugin directory.
+/// Where a usable libvlc lives: the library file, its plugin directory and
+/// VLC's data directory (Lua scripts, HRTFs) when it has to be named.
 #[derive(Debug, Clone)]
 pub struct Location {
     pub lib: PathBuf,
     pub core: Option<PathBuf>,
     pub plugins: Option<PathBuf>,
+    pub data: Option<PathBuf>,
 }
 
-/// Candidate libvlc locations, most specific first. `NOTVLC_LIBVLC` may name
-/// either the library file or a VLC install directory.
-pub fn candidate_locations() -> Vec<Location> {
-    fn in_dir(lib_dir: PathBuf, plugins: PathBuf) -> Location {
-        let (lib, core) = if cfg!(target_os = "macos") {
-            (lib_dir.join("libvlc.dylib"), lib_dir.join("libvlccore.dylib"))
-        } else if cfg!(windows) {
-            (lib_dir.join("libvlc.dll"), lib_dir.join("libvlccore.dll"))
-        } else {
-            (lib_dir.join("libvlc.so.5"), lib_dir.join("libvlccore.so.9"))
-        };
-        Location { lib, core: Some(core), plugins: Some(plugins) }
+/// File names of libvlc and libvlccore on this platform.
+const LIB_NAMES: (&str, &str) = if cfg!(target_os = "macos") {
+    ("libvlc.dylib", "libvlccore.dylib")
+} else if cfg!(windows) {
+    ("libvlc.dll", "libvlccore.dll")
+} else {
+    ("libvlc.so.5", "libvlccore.so.9")
+};
+
+fn in_dir(lib_dir: &Path, plugins: PathBuf) -> Location {
+    Location {
+        lib: lib_dir.join(LIB_NAMES.0),
+        core: Some(lib_dir.join(LIB_NAMES.1)),
+        plugins: Some(plugins),
+        data: None,
     }
+}
+
+/// A directory laid out like VLC.app's `Contents/MacOS`: `lib/`, `plugins/`
+/// and `share/`. LVP.app copies this layout.
+fn mac_app_dir(dir: &Path) -> Location {
+    Location { data: Some(dir.join("share")), ..in_dir(&dir.join("lib"), dir.join("plugins")) }
+}
+
+/// The libvlc that the packaging scripts copy next to the executable:
+/// `LVP.app/Contents/MacOS` on macOS, beside `LVP.exe` on Windows.
+/// Linux packages use the distribution's libvlc instead.
+fn bundled() -> Option<Location> {
+    let dir = exe_dir()?;
+    if cfg!(target_os = "macos") {
+        Some(mac_app_dir(&dir))
+    } else if cfg!(windows) {
+        Some(in_dir(&dir, dir.join("plugins")))
+    } else {
+        None
+    }
+}
+
+/// The running executable's directory, following symlinks: winget starts
+/// portable apps through one, and the engine sits next to the target.
+fn exe_dir() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let exe = std::fs::canonicalize(&exe).unwrap_or(exe);
+    // Windows canonicalises to the verbatim form (\\?\C:\...), which libvlc's
+    // plugin scan does not expect.
+    let exe = match exe.to_str().and_then(|s| s.strip_prefix(r"\\?\")) {
+        Some(s) if !s.starts_with(r"UNC\") => PathBuf::from(s),
+        _ => exe,
+    };
+    exe.parent().map(Path::to_path_buf)
+}
+
+/// Candidate libvlc locations, most specific first. `LVP_LIBVLC` may name
+/// either the library file or a VLC install directory. The bundled copy comes
+/// before system installs because it is the version the package was built with.
+pub fn candidate_locations() -> Vec<Location> {
     let mut out = Vec::new();
-    if let Ok(p) = std::env::var("NOTVLC_LIBVLC") {
+    if let Ok(p) = std::env::var("LVP_LIBVLC") {
         let p = PathBuf::from(p);
         if p.is_file() {
             let dir = p.parent().map(Path::to_path_buf).unwrap_or_default();
-            let core = dir.join(if cfg!(target_os = "macos") { "libvlccore.dylib" } else { "libvlccore.so.9" });
             out.push(Location {
+                core: Some(dir.join(LIB_NAMES.1)),
                 lib: p,
-                core: Some(core),
                 plugins: std::env::var_os("VLC_PLUGIN_PATH").map(PathBuf::from),
+                data: None,
             });
         } else if p.join("Contents/MacOS/lib").is_dir() {
-            out.push(in_dir(p.join("Contents/MacOS/lib"), p.join("Contents/MacOS/plugins")));
+            out.push(mac_app_dir(&p.join("Contents/MacOS")));
         } else {
-            out.push(in_dir(p.clone(), p.join("plugins")));
+            out.push(in_dir(&p, p.join("plugins")));
         }
     }
+    out.extend(bundled());
     if cfg!(target_os = "macos") {
         let mut apps = vec![PathBuf::from("/Applications/VLC.app")];
         if let Some(home) = std::env::var_os("HOME") {
             apps.push(PathBuf::from(home).join("Applications/VLC.app"));
         }
         for app in apps {
-            out.push(in_dir(app.join("Contents/MacOS/lib"), app.join("Contents/MacOS/plugins")));
+            out.push(mac_app_dir(&app.join("Contents/MacOS")));
         }
     } else if cfg!(windows) {
         for base in ["C:\\Program Files\\VideoLAN\\VLC", "C:\\Program Files (x86)\\VideoLAN\\VLC"] {
-            out.push(in_dir(PathBuf::from(base), PathBuf::from(base).join("plugins")));
+            out.push(in_dir(Path::new(base), Path::new(base).join("plugins")));
         }
     } else {
         for dir in
             ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/usr/lib/aarch64-linux-gnu", "/usr/lib64", "/usr/local/lib"]
         {
-            out.push(in_dir(PathBuf::from(dir), PathBuf::from(dir).join("vlc/plugins")));
+            out.push(in_dir(Path::new(dir), Path::new(dir).join("vlc/plugins")));
         }
     }
     out
@@ -727,7 +773,7 @@ pub fn load() -> Result<Api> {
     }
     if errors.is_empty() {
         Err(anyhow!(
-            "libvlc was not found. Install VLC 3 (https://www.videolan.org/vlc/) or set NOTVLC_LIBVLC to its location."
+            "libvlc was not found. Install VLC 3 (https://www.videolan.org/vlc/) or set LVP_LIBVLC to its location."
         ))
     } else {
         Err(anyhow!("libvlc could not be loaded:\n{}", errors.join("\n")))
@@ -742,6 +788,15 @@ unsafe fn load_from(loc: &Location) -> Result<Api> {
             // SAFETY: called before any libvlc instance exists, during start-up.
             std::env::set_var("VLC_PLUGIN_PATH", plugins);
         }
+        if let Some(data) = &loc.data
+            && data.is_dir()
+        {
+            // VLC 3 on macOS finds `share/` only when the host executable is
+            // named VLC; anywhere else it looks in lib/vlc/share, which does not
+            // exist, and loses its Lua playlist, discovery and art scripts.
+            // SAFETY: as above.
+            std::env::set_var("VLC_DATA_PATH", data);
+        }
         // libvlc refers to libvlccore through @rpath on macOS, which a host
         // executable cannot resolve. Loading libvlccore first by absolute path
         // lets the loader reuse it.
@@ -755,5 +810,17 @@ unsafe fn load_from(loc: &Location) -> Result<Api> {
         let lib = Library::new(&loc.lib)?;
         let dir = loc.lib.parent().map(Path::to_path_buf).unwrap_or_default();
         Api::resolve(lib, dir, loc.plugins.clone(), core)
+    }
+}
+
+#[cfg(all(test, any(target_os = "macos", windows)))]
+mod tests {
+    #[test]
+    fn bundled_libvlc_is_tried_before_system_installs() {
+        let exe_dir = super::exe_dir().unwrap();
+        let libs: Vec<_> = super::candidate_locations().into_iter().map(|l| l.lib).collect();
+        let bundled = libs.iter().position(|l| l.starts_with(&exe_dir)).unwrap();
+        let system = libs.iter().position(|l| l.starts_with("/Applications") || l.starts_with("C:\\Program Files"));
+        assert!(bundled < system.unwrap());
     }
 }

@@ -6,11 +6,11 @@ use std::path::Path;
 use std::process::Command;
 use std::time::{Duration, Instant};
 
-use notvlc::app::ports::{EngineCommand, MediaEngine, OpenRequest, PlayerState};
-use notvlc::app::video::VideoOutput;
-use notvlc::domain::media::MediaItem;
-use notvlc::domain::settings::Settings;
-use notvlc::infra::vlc::VlcEngine;
+use lvp::app::ports::{EngineCommand, MediaEngine, OpenRequest, PlayerState};
+use lvp::app::video::VideoOutput;
+use lvp::domain::media::MediaItem;
+use lvp::domain::settings::Settings;
+use lvp::infra::vlc::VlcEngine;
 
 const ASS_HEAD: &str = "[Script Info]\nScriptType: v4.00+\nPlayResX: 640\nPlayResY: 360\n\n[V4+ Styles]\n\
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n\
@@ -53,13 +53,13 @@ fn engine() -> Option<VlcEngine> {
         s.video.effects.essential.adjust_enabled = true;
     }
     if std::env::var("SUBTEST_SWDEC").is_ok() {
-        s.performance.hw_decoding = notvlc::domain::settings::HwDecoding::Disabled;
+        s.performance.hw_decoding = lvp::domain::settings::HwDecoding::Disabled;
         s.general.extra_args.push_str(" --codec=avcodec,all");
     }
     if let Ok(log) = std::env::var("SUBTEST_LOG") {
         s.general.save_log = true;
         s.general.log_file = log;
-        s.general.log_level = notvlc::domain::settings::LogLevel::Debug;
+        s.general.log_level = lvp::domain::settings::LogLevel::Debug;
     }
     VlcEngine::new(&s).map_err(|e| eprintln!("libvlc unavailable ({e:#}), skipping")).ok()
 }
@@ -242,7 +242,7 @@ fn ass_as_plain_text_experiment() {
     let mut s = Settings::default();
     s.recording.discover_cast = false;
     s.general.extra_args = "--aout=dummy".into();
-    s.performance.hw_decoding = notvlc::domain::settings::HwDecoding::Disabled;
+    s.performance.hw_decoding = lvp::domain::settings::HwDecoding::Disabled;
     let Ok(e) = VlcEngine::new(&s) else { return };
     let v = e.video();
     let mut item = MediaItem::file(dir.path().join("two_subs.mkv"));

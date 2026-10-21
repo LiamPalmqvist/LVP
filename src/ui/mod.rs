@@ -33,7 +33,7 @@ pub struct Resources {
     pub video_frame: Option<(TextureId, [u32; 2])>,
 }
 
-pub struct NotVlcApp {
+pub struct LvpApp {
     pub app: App,
     pub st: UiState,
     pub res: Resources,
@@ -58,7 +58,7 @@ struct WindowTracker {
     was_fullscreen: bool,
 }
 
-impl NotVlcApp {
+impl LvpApp {
     /// Uses the platform's window buttons (drawn by the hook's owner) instead
     /// of the design's.
     pub fn set_native_titlebar(&mut self, hook: Box<dyn FnMut(f32, bool)>) {
@@ -481,7 +481,7 @@ impl NotVlcApp {
     }
 }
 
-impl eframe::App for NotVlcApp {
+impl eframe::App for LvpApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.frame(ctx, frame.wgpu_render_state());
     }

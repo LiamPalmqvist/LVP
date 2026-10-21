@@ -343,7 +343,7 @@ fn home(app: &mut App, q: &str, sort: Option<SortOption>, compact: bool) -> Page
         v
     };
     let mut m = PageModel::new(PageKind::Home, vec![crumb("Home", Some(Page::Home))]);
-    m.empty = ("Welcome to NotVLC", "Things you play show up here. Open a file or browse Videos and Music.");
+    m.empty = ("Welcome to LVP", "Things you play show up here. Open a file or browse Videos and Music.");
     let n = if compact { 3 } else { 24 };
 
     let cw = sorted(app.library.continue_watching(n).into_iter().filter(|(i, _)| keep(i, q)).collect());

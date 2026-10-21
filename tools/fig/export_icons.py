@@ -12,6 +12,8 @@ import json, os, re, sys
 import render
 
 ICON_SET = "42:356"
+# VideoLAN's cone is VLC's trademark; LVP draws its own logo (logo.svg).
+SKIP = {"vlc"}
 
 
 def slug(variant):
@@ -37,6 +39,8 @@ def main():
         if n.get("type") != "SYMBOL":
             continue
         name = slug(n["name"])
+        if name in SKIP:
+            continue
         if name in seen:
             seen[name] += 1
             name = f"{name}-{seen[name]}"

@@ -1,0 +1,9 @@
+# The VLC 3 release whose engine the macOS and Windows packages bundle
+# (tools/bundle-macos.sh, tools/build-windows.ps1). Each line after the version
+# is a download suffix from download.videolan.org and VideoLAN's published
+# SHA-256 for it. To update, change all of them together.
+version 3.0.24
+arm64 64a89d93cdd30b0e97131743e246373db82d6826ea882d265d46d74b136da2b7
+intel64 1ef6c903e2dc026d4e58ddf7b2a9ed0eb6f8caf80a9a9f46f96490340b962707
+win64 fcf30850371ad10c9373cc4f0f4501e7dee49e3e9ae9f20c72fb2661a1ca6323
+winarm64 f096226211f67f8e06e50cd0d6a948d842db128ff22a676dc1ca1cc6114baba5

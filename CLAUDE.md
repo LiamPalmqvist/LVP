@@ -1,11 +1,11 @@
-# NotVLC
+# LVP
 
 A desktop media player in Rust with every function of VLC, built on VLC's own engine (libvlc 3) and
 drawn to match the "VLC Redesign (Community)" Figma file.
 
 ## End goal
 
-A user can install VLC 3, run NotVLC, and do everything they could do in VLC media player (play any
+A user can install VLC 3, run LVP, and do everything they could do in VLC media player (play any
 file, disc or stream; pick tracks and subtitles; sync audio and subtitles; apply VLC's audio and
 video effects; manage a queue and playlists; browse local and network media; record, snapshot,
 convert and cast; configure every preference) through an interface that matches the design file
@@ -36,9 +36,9 @@ cargo test                                    # unit, UI and libvlc tests (libvl
 cargo test --lib domain::playlist             # run one module's tests
 cargo clippy --all-targets -- -D warnings     # lint
 cargo fmt                                     # format
-cargo run                                     # run the app (needs /Applications/VLC.app or NOTVLC_LIBVLC)
+cargo run                                     # run the app (needs /Applications/VLC.app or LVP_LIBVLC)
 cargo run --example snapshot -- --view player /tmp/p.png   # headless render of the UI with demo content
-tools/bundle-macos.sh                         # release build packaged as dist/NotVLC.app (--debug for a dev build)
+tools/bundle-macos.sh                         # release build packaged as dist/LVP.app with VLC's engine (--debug, --no-vlc)
 tools/build-linux.sh                          # Linux tarball in dist/ (--install-deps, --debug)
 gh workflow run build.yml                     # build macOS, Linux and Windows packages on GitHub Actions
 ```
@@ -57,7 +57,7 @@ needs to run against a fake engine for snapshots and tests.
 
 ```
 src/
-  main.rs          # wiring: JsonStore + VlcEngine + VlcProbe -> App -> NotVlcApp window
+  main.rs          # wiring: JsonStore + VlcEngine + VlcProbe -> App -> LvpApp window
   domain/          # pure types and rules: media, settings (one struct per settings page),
                    # effects (VLC module params), queue/repeat/shuffle, shortcuts, toolbar,
                    # playlist file formats, library sorting
@@ -100,9 +100,9 @@ tests/             # libvlc smoke test and demo fixtures
   use them through `widgets::pal(ctx)`, never hard-coded colours.
 - **Errors:** `anyhow` in infra; the app turns failures into toasts (`App::toast_error`); the UI
   never panics on bad media.
-- **Config:** settings persist as JSON in the platform data dir (`NOTVLC_HOME` overrides it);
+- **Config:** settings persist as JSON in the platform data dir (`LVP_HOME` overrides it);
   `App::update_settings` is the only way to change settings from the UI.
-- **Logging:** `log` macros, `RUST_LOG=notvlc=debug` to see them; libvlc's own log goes to the
+- **Logging:** `log` macros, `RUST_LOG=lvp=debug` to see them; libvlc's own log goes to the
   file chosen in General > Diagnostics.
 - **Tests:** pure logic gets inline `#[cfg(test)]` tests; libvlc behaviour is covered by
   `tests/engine_smoke.rs`; screens are checked with the snapshot example against `design/frames`.
@@ -129,10 +129,18 @@ architecture needs revisiting; raise it rather than routing around it.
 
 ## Project notes
 
-- libvlc is loaded at runtime from `/Applications/VLC.app` (or `NOTVLC_LIBVLC`). libvlccore is
-  preloaded first because libvlc links it through `@rpath`. libvlccore also gives access to VLC
-  object variables, which is how audio filters, video filters, recording and subtitle timing change
-  live; without it only the equalizer and picture adjustments work live.
+- The app was called NotVLC until 2026-10-21 (Viddy was considered and dropped: sachaos/viddy, a
+  `watch` replacement, owns that name on Homebrew and the AUR and installs /usr/bin/viddy). The
+  Homebrew tap is still `LiamPalmqvist/homebrew-notvlc`. The logo is `assets/icons/logo.svg`, a
+  placeholder until a real one exists: the title bar, About, onboarding, the empty player and the
+  app icon all draw it. Do not bring back VLC's cone; it is VideoLAN's trademark.
+- libvlc is loaded at runtime from `LVP_LIBVLC`, then the copy bundled next to the executable
+  (packaged macOS and Windows builds; pinned in `tools/vlc-release.txt`), then a system install such
+  as `/Applications/VLC.app`. libvlccore is preloaded first because libvlc links it through
+  `@rpath`, and on macOS `VLC_DATA_PATH` is set because VLC 3 only finds its Lua scripts by itself
+  when the host executable is named VLC. libvlccore also gives access to VLC object variables,
+  which is how audio filters, video filters, recording and subtitle timing change live; without it
+  only the equalizer and picture adjustments work live.
 - On macOS the window keeps AppKit's frame (corners, shadow, traffic lights) with a transparent
   title bar; `infra/macos_window.rs` moves the traffic lights into the 40pt bar every frame, and
   `UiState::native_titlebar` makes the bar leave room for them. Elsewhere the app draws the

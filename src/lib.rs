@@ -1,4 +1,4 @@
-//! NotVLC: a media player built on libvlc with a redesigned interface.
+//! LVP: a media player built on libvlc with a redesigned interface.
 //!
 //! Layers, outermost first: `ui` (egui screens) -> `app` (state and use cases)
 //! -> `domain` (pure types). `infra` implements `app::ports` with libvlc and

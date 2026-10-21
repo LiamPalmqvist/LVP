@@ -41,7 +41,7 @@ struct Cache {
 }
 
 fn cache(ctx: &Context) -> Arc<Mutex<Cache>> {
-    ctx.data_mut(|d| d.get_temp_mut_or_default::<Arc<Mutex<Cache>>>(Id::new("notvlc-icon-cache")).clone())
+    ctx.data_mut(|d| d.get_temp_mut_or_default::<Arc<Mutex<Cache>>>(Id::new("lvp-icon-cache")).clone())
 }
 
 fn css(c: Color32) -> String {

@@ -53,7 +53,7 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState) {
     );
     left.spacing_mut().item_spacing.x = 7.0;
     left.add_space(7.0);
-    let logo = widgets::icon(&mut left, Icon::Vlc, 24.0, p.accent_logo);
+    let logo = widgets::icon(&mut left, Icon::Logo, 24.0, p.accent_logo);
     if logo.clicked() {
         st.navigate(crate::ui::pages::Page::Home);
     }
@@ -296,7 +296,7 @@ fn app_menu(button: &egui::Response, app: &mut App, st: &mut UiState) {
         {
             st.command(UiCommand::KeyboardShortcuts);
         }
-        if menu_row(ui, Some(Icon::Vlc), "About NotVLC", "", false).clicked() {
+        if menu_row(ui, Some(Icon::Logo), "About LVP", "", false).clicked() {
             st.dialogs.about = true;
         }
         if menu_row(ui, Some(Icon::Quit), "Quit", &shortcut(app, crate::domain::shortcuts::Action::Quit), false)

@@ -79,7 +79,7 @@ fn modal_impl(
         .stroke(Stroke::new(1.0, with_alpha(p.divider_dim, 0.6)))
         .shadow(egui::epaint::Shadow { offset: [0, 8], blur: 30, spread: 0, color: Color32::from_black_alpha(118) });
     let mut out = ModalOut::default();
-    let resp = egui::Modal::new(Id::new(("notvlc-dialog", id)))
+    let resp = egui::Modal::new(Id::new(("lvp-dialog", id)))
         .backdrop_color(Color32::from_black_alpha(if p.dark { 150 } else { 90 }))
         .frame(frame)
         .show(ctx, |ui| {

@@ -8,12 +8,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant};
 
-use notvlc::app::ports::{EngineCommand, MediaEngine, OpenRequest, PlayerState};
-use notvlc::app::video::VideoOutput;
-use notvlc::domain::effects::VideoEffects;
-use notvlc::domain::media::MediaItem;
-use notvlc::domain::settings::{Settings, Visualizer};
-use notvlc::infra::vlc::VlcEngine;
+use lvp::app::ports::{EngineCommand, MediaEngine, OpenRequest, PlayerState};
+use lvp::app::video::VideoOutput;
+use lvp::domain::effects::VideoEffects;
+use lvp::domain::media::MediaItem;
+use lvp::domain::settings::{Settings, Visualizer};
+use lvp::infra::vlc::VlcEngine;
 
 fn ffmpeg(args: &[&str], out: &Path) -> bool {
     Command::new("ffmpeg")

@@ -11,11 +11,11 @@ use super::theme::{Palette, font, mix, with_alpha};
 // ---- palette access ---------------------------------------------------------
 
 pub fn set_palette(ctx: &egui::Context, p: Palette) {
-    ctx.data_mut(|d| d.insert_temp(Id::new("notvlc-palette"), p));
+    ctx.data_mut(|d| d.insert_temp(Id::new("lvp-palette"), p));
 }
 
 pub fn pal(ctx: &egui::Context) -> Palette {
-    ctx.data(|d| d.get_temp(Id::new("notvlc-palette"))).unwrap_or_else(|| Palette::dark(Default::default()))
+    ctx.data(|d| d.get_temp(Id::new("lvp-palette"))).unwrap_or_else(|| Palette::dark(Default::default()))
 }
 
 pub fn colors(p: &Palette, fg: Color32) -> IconColors {

@@ -9,23 +9,23 @@ use crate::ui::theme::font;
 use crate::ui::widgets::{self, pal};
 
 const CREDITS: &[(&str, &str)] = &[
-    ("VLC and libvlc", "VideoLAN and the VLC authors. NotVLC plays everything through VLC's engine."),
+    ("VLC and libvlc", "VideoLAN and the VLC authors. LVP plays everything through VLC's engine."),
     ("Inter", "Rasmus Andersson, SIL Open Font License 1.1."),
     ("DM Mono", "Colophon Foundry for Google, SIL Open Font License 1.1."),
-    ("Design", "\"VLC Redesign (Community)\" on the Figma Community, whose screens and icons NotVLC follows."),
+    ("Design", "\"VLC Redesign (Community)\" on the Figma Community, whose screens and icons LVP follows."),
     ("egui", "Emil Ernerfeldt and contributors, MIT or Apache 2.0."),
 ];
 
 pub fn show(ctx: &egui::Context, app: &App, open: &mut bool) {
     let vlc = app.engine.version();
     let mut close = false;
-    let out = frame::modal(ctx, "about", "About NotVLC", vec2(640.0, 0.0), true, |ui, part| match part {
+    let out = frame::modal(ctx, "about", "About LVP", vec2(640.0, 0.0), true, |ui, part| match part {
         Part::Body => {
             let p = pal(ui.ctx());
             ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                widgets::icon(ui, Icon::Vlc, 72.0, p.accent_logo);
+                widgets::icon(ui, Icon::Logo, 72.0, p.accent_logo);
                 ui.add_space(4.0);
-                ui.label(RichText::new("NotVLC").font(font::light(32.0)).color(p.fg1));
+                ui.label(RichText::new("LVP").font(font::light(32.0)).color(p.fg1));
                 ui.label(
                     RichText::new(format!("Version {}  ·  libvlc {}", env!("CARGO_PKG_VERSION"), vlc))
                         .font(font::mono(13.0))
@@ -54,8 +54,8 @@ pub fn show(ctx: &egui::Context, app: &App, open: &mut bool) {
             frame::rule(ui);
             frame::note(
                 ui,
-                "NotVLC is free software under the GNU General Public License, version 2 or later. VLC and \
-                 VideoLAN are trademarks of VideoLAN; NotVLC is not affiliated with VideoLAN.",
+                "LVP is free software under the GNU General Public License, version 2 or later. VLC and \
+                 VideoLAN are trademarks of VideoLAN; LVP is not affiliated with VideoLAN.",
             );
         }
         _ => {

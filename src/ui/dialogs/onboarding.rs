@@ -73,7 +73,7 @@ pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut Onboar
     }
     let p = pal(ctx);
     let mut finish = false;
-    let resp = egui::Modal::new(egui::Id::new("notvlc-onboarding"))
+    let resp = egui::Modal::new(egui::Id::new("lvp-onboarding"))
         .backdrop_color(Color32::from_black_alpha(if p.dark { 150 } else { 90 }))
         .frame(
             egui::Frame::new()
@@ -154,11 +154,11 @@ pub fn show(ctx: &egui::Context, app: &mut App, open: &mut bool, st: &mut Onboar
 fn welcome(ui: &mut Ui, app: &App, st: &mut OnboardingState, o: Pos2) {
     let p = pal(ui.ctx());
     let _ = app;
-    widgets::paint_icon(ui, Rect::from_min_size(o + vec2(475.0, 116.0), vec2(141.0, 141.0)), Icon::Vlc, p.accent_logo);
+    widgets::paint_icon(ui, Rect::from_min_size(o + vec2(475.0, 116.0), vec2(141.0, 141.0)), Icon::Logo, p.accent_logo);
     ui.painter().text(
         o + vec2(SIZE.x / 2.0, 286.0 + 19.5),
         Align2::CENTER_CENTER,
-        "Welcome to NotVLC!",
+        "Welcome to LVP!",
         font::light(32.0),
         p.fg1,
     );
@@ -344,7 +344,7 @@ fn player_preview(ui: &Ui, o: Pos2) {
     painter.rect_filled(win, 0, if p.dark { Color32::BLACK } else { p.stage });
     let bar = Rect::from_min_size(win.min, vec2(win.width(), 22.0));
     painter.rect_filled(bar, 0, p.bg_a4);
-    widgets::paint_icon(ui, Rect::from_min_size(bar.min + vec2(9.0, 3.0), vec2(16.0, 16.0)), Icon::Vlc, p.accent_logo);
+    widgets::paint_icon(ui, Rect::from_min_size(bar.min + vec2(9.0, 3.0), vec2(16.0, 16.0)), Icon::Logo, p.accent_logo);
     for (k, icon) in [Icon::Close, Icon::Fullscreen, Icon::Maximize, Icon::Minimize].iter().enumerate() {
         let x = bar.max.x - 18.0 - 19.0 * k as f32;
         widgets::paint_icon(ui, Rect::from_center_size(pos2(x, bar.center().y), vec2(16.0, 16.0)), *icon, p.fg_a2);

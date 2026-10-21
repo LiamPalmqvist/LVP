@@ -1,0 +1,43 @@
+VLC's engine in this package
+============================
+
+This copy of LVP includes the playback engine of VLC media player
+{version}: libvlc, libvlccore, their plugins and VLC's Lua scripts, taken
+from VideoLAN's official release. VLC's own interface is not included.
+
+Licences
+--------
+
+- LVP: GNU General Public License, version 2 or later (LICENSE.txt).
+  Source: https://github.com/LiamPalmqvist/NotVLC
+- libvlc and libvlccore: GNU Lesser General Public License, version 2.1 or
+  later (LGPL-2.1.txt). Copyright VLC authors and VideoLAN.
+- VLC's plugins: GNU GPL version 2 or later, or GNU LGPL version 2.1 or later,
+  depending on the plugin. The third-party libraries built into them (FFmpeg,
+  libdvdnav, libass and others) are under their own free software licences.
+- The Inter and DM Mono fonts: SIL Open Font License 1.1 (Inter-OFL.txt,
+  DMMono-OFL.txt).
+
+Source code
+-----------
+
+The complete source of VLC {version} is available from VideoLAN:
+
+  https://download.videolan.org/pub/videolan/vlc/{version}/vlc-{version}.tar.xz
+
+and the source of the third-party libraries it is built with:
+
+  https://download.videolan.org/pub/contrib/
+
+Replacing the engine
+--------------------
+
+LVP loads libvlc at run time, so it works with any build of libvlc 3. Set
+the LVP_LIBVLC environment variable to the folder that contains another
+libvlc, or replace the libvlc files in this package.
+
+Trademarks
+----------
+
+VLC, VLC media player and VideoLAN are trademarks of VideoLAN. LVP is not
+made, endorsed or supported by VideoLAN.

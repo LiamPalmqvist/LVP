@@ -1267,9 +1267,9 @@ fn log_path(settings: &Settings) -> Option<std::path::PathBuf> {
     }
     let home = std::env::var_os("HOME").map(std::path::PathBuf::from).unwrap_or_else(std::env::temp_dir);
     Some(if cfg!(target_os = "macos") {
-        home.join("Library/Logs/NotVLC/vlc.log")
+        home.join("Library/Logs/LVP/vlc.log")
     } else {
-        home.join(".cache/notvlc/vlc.log")
+        home.join(".cache/lvp/vlc.log")
     })
 }
 

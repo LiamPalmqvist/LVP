@@ -33,14 +33,14 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use notvlc::app::App;
-use notvlc::app::fake::{FakeEngine, FakeProbe};
-use notvlc::app::ports::{Chapter, MediaEngine, PlayerState, Track};
-use notvlc::domain::media::MediaItem;
-use notvlc::domain::settings::{Accent, Theme};
-use notvlc::infra::store::JsonStore;
-use notvlc::ui::NotVlcApp;
-use notvlc::ui::state::{PlayerPanel, View};
+use lvp::app::App;
+use lvp::app::fake::{FakeEngine, FakeProbe};
+use lvp::app::ports::{Chapter, MediaEngine, PlayerState, Track};
+use lvp::domain::media::MediaItem;
+use lvp::domain::settings::{Accent, Theme};
+use lvp::infra::store::JsonStore;
+use lvp::ui::LvpApp;
+use lvp::ui::state::{PlayerPanel, View};
 
 const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/demo");
 
@@ -93,7 +93,7 @@ fn main() {
     let scale: f32 = arg_value(&args, "--scale").and_then(|s| s.parse().ok()).unwrap_or(1.0);
     let steps: usize = arg_value(&args, "--steps").and_then(|s| s.parse().ok()).unwrap_or(6);
 
-    let home = std::env::temp_dir().join(format!("notvlc-snapshot-{}", std::process::id()));
+    let home = std::env::temp_dir().join(format!("lvp-snapshot-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&home);
     let (eps, songs) = demo_files(&home);
     let store = Arc::new(JsonStore::at(home.join("data"), home.join("cache")));
@@ -115,7 +115,7 @@ fn main() {
     // Thumbnails from the design, placed where the library expects them.
     for (i, e) in eps.iter().enumerate() {
         let src = Path::new(FIXTURES).join(format!("thumbs/ep{:02}.png", i % 13 + 1));
-        let dst = app.library.thumbnail_path(&notvlc::domain::media::MediaSource::File(e.clone()));
+        let dst = app.library.thumbnail_path(&lvp::domain::media::MediaSource::File(e.clone()));
         std::fs::create_dir_all(dst.parent().unwrap()).unwrap();
         std::fs::copy(src, dst).unwrap();
     }
@@ -132,7 +132,7 @@ fn main() {
         let mut item = MediaItem::file(s);
         item.meta.artist = Some("juxtopposed".into());
         item.meta.title = Some(s.file_stem().unwrap().to_string_lossy().split(" - ").next().unwrap().to_string());
-        item.meta.artwork_url = covers.get(i).map(|c| notvlc::domain::media::path_to_file_url(c));
+        item.meta.artwork_url = covers.get(i).map(|c| lvp::domain::media::path_to_file_url(c));
         item.meta.duration_ms = Some(201_000 + i as i64 * 17_000);
         app.library.set_meta(&item.source, item.meta.clone());
         app.library.mark_played(&item, true);
@@ -190,7 +190,7 @@ fn main() {
         .with_size(egui::vec2(w, h))
         .with_pixels_per_point(scale)
         .wgpu()
-        .build_eframe(|cc| NotVlcApp::new(&cc.egui_ctx, app, Vec::new()));
+        .build_eframe(|cc| LvpApp::new(&cc.egui_ctx, app, Vec::new()));
 
     {
         let ui = harness.state_mut();
@@ -201,15 +201,15 @@ fn main() {
         }
         if let Some(page) = arg_value(&args, "--page") {
             st.page = match page.as_str() {
-                "videos" => notvlc::ui::pages::Page::Videos,
-                "music" => notvlc::ui::pages::Page::Music,
-                "network" => notvlc::ui::pages::Page::Network,
-                "playlists" => notvlc::ui::pages::Page::Playlists,
-                "recent" => notvlc::ui::pages::Page::Recent,
-                p if p.starts_with("folder:") => notvlc::ui::pages::Page::Folder(PathBuf::from(&p[7..])),
-                p if p.starts_with("playlist:") => notvlc::ui::pages::Page::Playlist(p[9..].parse().unwrap_or(1)),
-                "season" => notvlc::ui::pages::Page::Folder(home.join("Videos/Shows/The Wand/S01")),
-                _ => notvlc::ui::pages::Page::Home,
+                "videos" => lvp::ui::pages::Page::Videos,
+                "music" => lvp::ui::pages::Page::Music,
+                "network" => lvp::ui::pages::Page::Network,
+                "playlists" => lvp::ui::pages::Page::Playlists,
+                "recent" => lvp::ui::pages::Page::Recent,
+                p if p.starts_with("folder:") => lvp::ui::pages::Page::Folder(PathBuf::from(&p[7..])),
+                p if p.starts_with("playlist:") => lvp::ui::pages::Page::Playlist(p[9..].parse().unwrap_or(1)),
+                "season" => lvp::ui::pages::Page::Folder(home.join("Videos/Shows/The Wand/S01")),
+                _ => lvp::ui::pages::Page::Home,
             };
         }
         if let Some(panel) = arg_value(&args, "--panel") {
@@ -223,7 +223,7 @@ fn main() {
         }
         if let Some(cat) = arg_value(&args, "--settings") {
             st.settings.open = true;
-            if let Some(c) = notvlc::ui::settings::Category::from_name(&cat) {
+            if let Some(c) = lvp::ui::settings::Category::from_name(&cat) {
                 st.settings.category = c;
             }
         }
@@ -262,15 +262,15 @@ fn main() {
         }
         // Library pages: --list (list view), --sort LABEL (e.g. "Unwatched First").
         if has(&args, "--list") {
-            st.library.view = notvlc::domain::library::ViewMode::List;
+            st.library.view = lvp::domain::library::ViewMode::List;
         }
         if let Some(s) = arg_value(&args, "--sort") {
             st.library.sort =
-                notvlc::domain::browse::SortOption::ALL.iter().copied().find(|o| o.label().eq_ignore_ascii_case(&s));
+                lvp::domain::browse::SortOption::ALL.iter().copied().find(|o| o.label().eq_ignore_ascii_case(&s));
         }
         // --lib-page songs|albums|artists|genres|continue|service:NAME|album:NAME for the other library pages.
         if let Some(lp) = arg_value(&args, "--lib-page") {
-            use notvlc::ui::pages::Page;
+            use lvp::ui::pages::Page;
             st.page = match lp.as_str() {
                 "songs" => Page::Songs,
                 "albums" => Page::Albums,
@@ -336,7 +336,7 @@ fn main() {
         // ---- dialogs ----
         // --vlc-dialog login|question|progress|error   queue one of VLC's prompts
         if let Some(kind) = arg_value(&args, "--vlc-dialog") {
-            use notvlc::app::ports::DialogRequest;
+            use lvp::app::ports::DialogRequest;
             let (title, text) = ("Authentication required".to_string(), "smb://nas/Movies needs a login.".to_string());
             ui.app.dialogs.push_back(match kind.as_str() {
                 "question" => DialogRequest::Question {
@@ -363,7 +363,7 @@ fn main() {
             });
         }
         if arg_value(&args, "--dialog").is_some_and(|d| d.starts_with("media_info")) {
-            use notvlc::domain::media::CodecInfo;
+            use lvp::domain::media::CodecInfo;
             let mut st = fake.status.lock();
             st.meta.title = Some("The Wand S01E11".into());
             st.meta.show_name = Some("The Wand".into());
@@ -413,7 +413,7 @@ fn main() {
             }
         }
         if arg_value(&args, "--dialog").as_deref() == Some("convert") {
-            use notvlc::app::JobState;
+            use lvp::app::JobState;
             ui.app.jobs.push(JobState {
                 id: 1,
                 label: "The_Wand_S01E01.mp4 to The_Wand_S01E01.webm".into(),

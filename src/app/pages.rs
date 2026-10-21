@@ -35,7 +35,7 @@ impl App {
 
     /// Where a playlist's custom cover image is kept.
     pub fn playlist_cover_path(&self, id: u64) -> PathBuf {
-        self.library.thumbnail_path(&MediaSource::Location(format!("notvlc-playlist://{id}")))
+        self.library.thumbnail_path(&MediaSource::Location(format!("lvp-playlist://{id}")))
     }
 
     /// Copies an image to be a playlist's cover.

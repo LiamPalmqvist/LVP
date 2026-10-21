@@ -132,7 +132,7 @@ pub fn show(ui: &mut Ui, app: &mut App, st: &mut UiState, res: &mut Resources) {
 fn empty_player(ui: &mut Ui, r: Rect, st: &mut UiState) {
     let p = pal(ui.ctx());
     let c = r.center();
-    widgets::paint_icon(ui, Rect::from_center_size(c - vec2(0.0, 40.0), vec2(72.0, 72.0)), Icon::Vlc, p.accent_logo);
+    widgets::paint_icon(ui, Rect::from_center_size(c - vec2(0.0, 40.0), vec2(72.0, 72.0)), Icon::Logo, p.accent_logo);
     ui.painter().text(
         c + vec2(0.0, 20.0),
         Align2::CENTER_TOP,
