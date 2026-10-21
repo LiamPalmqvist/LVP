@@ -1,16 +1,16 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 
 PackageIdentifier: LiamPalmqvist.LVP
-PackageVersion: 0.1.0
+PackageVersion: 0.2.0
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
-- RelativeFilePath: lvp-0.1.0-windows-x64\LVP.exe
+- RelativeFilePath: lvp-0.2.0-windows-x64\LVP.exe
   PortableCommandAlias: lvp
-ReleaseDate: 2026-10-17
+ReleaseDate: 2026-10-21
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/LiamPalmqvist/LVP/releases/download/v0.1.0/lvp-0.1.0-windows-x64.zip
-  InstallerSha256: E047C9A40CF8C316019245542486406F21B4B7C782AB9B303E45E7B5F2C1A2E2
+  InstallerUrl: https://github.com/LiamPalmqvist/LVP/releases/download/v0.2.0/lvp-0.2.0-windows-x64.zip
+  InstallerSha256: 60960A23199904D530262832B7A489495EBF1D41713D967A5F9AFAB44AB0103B
 ManifestType: installer
 ManifestVersion: 1.12.0

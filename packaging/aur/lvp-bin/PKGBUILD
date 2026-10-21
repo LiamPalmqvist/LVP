@@ -1,6 +1,6 @@
 # Maintainer: Liam Palmqvist <https://github.com/LiamPalmqvist>
 pkgname=lvp-bin
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Media player built on VLC's engine with a redesigned interface (release binary)"
 arch=('x86_64')
@@ -17,7 +17,7 @@ provides=('lvp')
 conflicts=('lvp')
 options=('!debug')
 source_x86_64=("lvp-$pkgver-linux-x86_64.tar.gz::$url/releases/download/v$pkgver/lvp-$pkgver-linux-x86_64.tar.gz")
-sha256sums_x86_64=('409b64e1fa7783c54a1f0f16c6ece662871377f3e36b57ffeb2374f3e9569238')
+sha256sums_x86_64=('65bea68c50fc6e6cc6b0d739ae0ac7c6aecb232be219f07f63e83d05293aa54f')
 
 package() {
   cd "lvp-$pkgver-linux-$CARCH"

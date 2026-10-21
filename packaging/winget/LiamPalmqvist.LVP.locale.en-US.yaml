@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
 PackageIdentifier: LiamPalmqvist.LVP
-PackageVersion: 0.1.0
+PackageVersion: 0.2.0
 PackageLocale: en-US
 Publisher: Liam Palmqvist
 PublisherUrl: https://github.com/LiamPalmqvist
@@ -22,6 +22,6 @@ Tags:
 - media-player
 - video
 - vlc
-ReleaseNotesUrl: https://github.com/LiamPalmqvist/LVP/releases/tag/v0.1.0
+ReleaseNotesUrl: https://github.com/LiamPalmqvist/LVP/releases/tag/v0.2.0
 ManifestType: defaultLocale
 ManifestVersion: 1.12.0
