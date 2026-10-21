@@ -19,8 +19,10 @@ it comes from your distribution's VLC packages.
 brew install --cask liampalmqvist/notvlc/lvp
 ```
 
-`brew upgrade --cask lvp` updates LVP. `brew uninstall --cask --zap lvp` removes it along with its
-settings and library.
+Homebrew only loads casks from taps you trust, and naming the cask in full as above counts. Trust
+the tap once with `brew trust liampalmqvist/notvlc` and a plain `brew upgrade` keeps LVP up to
+date. `brew uninstall --cask --zap liampalmqvist/notvlc/lvp` removes it along with its settings and
+library.
 
 ### Arch Linux
 
