@@ -1,6 +1,6 @@
 pkgbase = lvp-bin
 	pkgdesc = Media player built on VLC's engine with a redesigned interface (release binary)
-	pkgver = 0.2.0
+	pkgver = 0.2.1
 	pkgrel = 1
 	url = https://github.com/LiamPalmqvist/LVP
 	arch = x86_64
@@ -24,7 +24,7 @@ pkgbase = lvp-bin
 	provides = lvp
 	conflicts = lvp
 	options = !debug
-	source_x86_64 = lvp-0.2.0-linux-x86_64.tar.gz::https://github.com/LiamPalmqvist/LVP/releases/download/v0.2.0/lvp-0.2.0-linux-x86_64.tar.gz
-	sha256sums_x86_64 = 65bea68c50fc6e6cc6b0d739ae0ac7c6aecb232be219f07f63e83d05293aa54f
+	source_x86_64 = lvp-0.2.1-linux-x86_64.tar.gz::https://github.com/LiamPalmqvist/LVP/releases/download/v0.2.1/lvp-0.2.1-linux-x86_64.tar.gz
+	sha256sums_x86_64 = f363f0b2f4e636fe62947fb327a344217fc2b18819893e1ce2cb478ad3240672
 
 pkgname = lvp-bin

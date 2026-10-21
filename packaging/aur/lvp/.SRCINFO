@@ -1,6 +1,6 @@
 pkgbase = lvp
 	pkgdesc = Media player built on VLC's engine with a redesigned interface
-	pkgver = 0.2.0
+	pkgver = 0.2.1
 	pkgrel = 1
 	url = https://github.com/LiamPalmqvist/LVP
 	arch = x86_64
@@ -24,7 +24,7 @@ pkgbase = lvp
 	optdepends = libnotify: desktop notifications
 	optdepends = xdg-utils: show a file in its folder
 	options = !debug
-	source = lvp-0.2.0.tar.gz::https://github.com/LiamPalmqvist/LVP/archive/refs/tags/v0.2.0.tar.gz
-	sha256sums = c5892ddf82648a797deb80bbfd0f220632e53ced0c1654c859ebaa1e74c904f2
+	source = lvp-0.2.1.tar.gz::https://github.com/LiamPalmqvist/LVP/archive/refs/tags/v0.2.1.tar.gz
+	sha256sums = 9a255f189870b276d9b77901a3a38c6a19cc95e77a5a948d24cab553c4a2ce71
 
 pkgname = lvp

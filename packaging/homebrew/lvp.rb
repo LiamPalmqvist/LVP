@@ -1,6 +1,6 @@
 cask "lvp" do
-  version "0.2.0"
-  sha256 "b7da1b32c56e60e53e5e3a8bdbef64320387c85011e16e94b5bc7d27d7e8e2bd"
+  version "0.2.1"
+  sha256 "90d3e6f4698a253c6ade24b046f46ac2143be785fdcce3019e3009974157e017"
 
   url "https://github.com/LiamPalmqvist/LVP/releases/download/v#{version}/lvp-#{version}-macos-arm64.zip"
   name "LVP"

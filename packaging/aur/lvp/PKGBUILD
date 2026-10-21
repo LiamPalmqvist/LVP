@@ -1,6 +1,6 @@
 # Maintainer: Liam Palmqvist <https://github.com/LiamPalmqvist>
 pkgname=lvp
-pkgver=0.2.0
+pkgver=0.2.1
 pkgrel=1
 pkgdesc="Media player built on VLC's engine with a redesigned interface"
 arch=('x86_64' 'aarch64')
@@ -17,7 +17,7 @@ optdepends=('xdg-desktop-portal: file and folder pickers'
 # tools/build-linux.sh strips the binary, so a debug package would be empty.
 options=('!debug')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('c5892ddf82648a797deb80bbfd0f220632e53ced0c1654c859ebaa1e74c904f2')
+sha256sums=('9a255f189870b276d9b77901a3a38c6a19cc95e77a5a948d24cab553c4a2ce71')
 
 prepare() {
   cd "LVP-$pkgver"
