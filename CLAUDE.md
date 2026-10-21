@@ -133,7 +133,9 @@ architecture needs revisiting; raise it rather than routing around it.
   `watch` replacement, owns that name on Homebrew and the AUR and installs /usr/bin/viddy). The
   Homebrew tap is still `LiamPalmqvist/homebrew-notvlc`. The logo is `assets/icons/logo.svg`, a
   placeholder until a real one exists: the title bar, About, onboarding, the empty player and the
-  app icon all draw it. Do not bring back VLC's cone; it is VideoLAN's trademark.
+  app icon all draw it in the accent colour (`ui::icons::app_icon`; the Dock and taskbar icon is
+  redrawn when the accent changes, through `infra/macos_window.rs` on macOS). Do not bring back
+  VLC's cone; it is VideoLAN's trademark.
 - libvlc is loaded at runtime from `LVP_LIBVLC`, then the copy bundled next to the executable
   (packaged macOS and Windows builds; pinned in `tools/vlc-release.txt`), then a system install such
   as `/Applications/VLC.app`. libvlccore is preloaded first because libvlc links it through

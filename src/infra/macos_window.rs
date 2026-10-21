@@ -4,11 +4,12 @@
 //! out for its 28pt title bar, so they are moved to sit centred in the taller
 //! bar, the way Electron's `trafficLightPosition` does. AppKit puts them back
 //! on resize and when leaving fullscreen, so `place` runs every frame and
-//! only touches the views when something moved.
+//! only touches the views when something moved. `set_dock_icon` swaps the
+//! Dock icon, which follows the accent colour.
 
 use objc2::encode::{Encode, Encoding};
 use objc2::msg_send;
-use objc2::rc::Retained;
+use objc2::rc::{Allocated, Retained};
 use objc2::runtime::AnyObject;
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
@@ -131,6 +132,37 @@ impl TrafficLights {
                     let _: () = msg_send![&**b, setFrameOrigin: origin];
                 }
             }
+        }
+    }
+}
+
+/// Replaces the app's Dock icon while it runs; the bundle's icon file still
+/// shows when it is not running. `rgba` is straight (not premultiplied).
+pub fn set_dock_icon(rgba: &[u8], width: u32, height: u32) {
+    let Some(image) = image::RgbaImage::from_raw(width, height, rgba.to_vec()) else { return };
+    let mut png = Vec::new();
+    if let Err(e) = image.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png) {
+        log::warn!("Dock icon not encoded: {e}");
+        return;
+    }
+    // Safety: AppKit calls on the main thread (eframe's update); the bytes
+    // outlive the NSData, which copies them.
+    unsafe {
+        let data: Option<Retained<AnyObject>> = msg_send![
+            objc2::class!(NSData),
+            dataWithBytes: png.as_ptr().cast::<std::ffi::c_void>(),
+            length: png.len()
+        ];
+        let Some(data) = data else { return };
+        let alloc: Allocated<AnyObject> = msg_send![objc2::class!(NSImage), alloc];
+        let icon: Option<Retained<AnyObject>> = msg_send![alloc, initWithData: &*data];
+        let Some(icon) = icon else {
+            log::warn!("Dock icon not decoded by AppKit");
+            return;
+        };
+        let app: Option<Retained<AnyObject>> = msg_send![objc2::class!(NSApplication), sharedApplication];
+        if let Some(app) = app {
+            let _: () = msg_send![&*app, setApplicationIconImage: &*icon];
         }
     }
 }

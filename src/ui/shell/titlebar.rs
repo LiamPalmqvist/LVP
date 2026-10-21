@@ -142,7 +142,7 @@ pub fn window_title(app: &App) -> String {
                 None => t,
             }
         }
-        _ => "VLC Media Player".to_string(),
+        _ => "LVP".to_string(),
     }
 }
 

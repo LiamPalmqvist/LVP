@@ -8,29 +8,10 @@ use std::sync::Arc;
 
 use lvp::app::App;
 use lvp::app::ports::Store;
-use lvp::domain::settings::Settings;
+use lvp::domain::settings::{Accent, Settings};
 use lvp::infra::store::JsonStore;
 use lvp::infra::vlc::{VlcEngine, VlcProbe};
 use lvp::ui::LvpApp;
-
-fn window_icon() -> Option<egui::IconData> {
-    let svg = lvp::ui::icons::Icon::Logo.svg().replace("rgb(211,121,24)", "rgb(255,136,0)");
-    let tree = resvg::usvg::Tree::from_str(&svg, &resvg::usvg::Options::default()).ok()?;
-    let mut pm = resvg::tiny_skia::Pixmap::new(256, 256)?;
-    let k = 256.0 / tree.size().width();
-    resvg::render(&tree, resvg::tiny_skia::Transform::from_scale(k, k), &mut pm.as_mut());
-    // Un-premultiply for the window icon.
-    let rgba = pm
-        .data()
-        .chunks_exact(4)
-        .flat_map(|p| {
-            let a = p[3] as f32 / 255.0;
-            let f = |c: u8| if a > 0.0 { ((c as f32 / a).round().min(255.0)) as u8 } else { 0 };
-            [f(p[0]), f(p[1]), f(p[2]), p[3]]
-        })
-        .collect();
-    Some(egui::IconData { rgba, width: 256, height: 256 })
-}
 
 fn main() -> eframe::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
@@ -38,7 +19,7 @@ fn main() -> eframe::Result {
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("--export-icon") {
         let out = args.get(2).cloned().unwrap_or_else(|| "lvp.png".into());
-        let icon = window_icon().expect("icon renders");
+        let icon = lvp::ui::icons::app_icon(Accent::Orange, 256).expect("icon renders");
         image::RgbaImage::from_raw(icon.width, icon.height, icon.rgba)
             .expect("icon buffer")
             .save(&out)
@@ -92,7 +73,7 @@ fn main() -> eframe::Result {
         .unwrap_or([1280.0, 800.0]);
     let remember = app.settings.interface.remember_window;
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title("VLC Media Player")
+        .with_title("LVP")
         .with_app_id("org.lvp.LVP")
         .with_inner_size(size)
         .with_min_inner_size([640.0, 400.0])
@@ -106,7 +87,7 @@ fn main() -> eframe::Result {
     if remember && let Some([x, y]) = app.settings.interface.window_pos {
         viewport = viewport.with_position([x, y]);
     }
-    if let Some(icon) = window_icon() {
+    if let Some(icon) = lvp::ui::icons::app_icon(app.settings.general.accent, 256) {
         viewport = viewport.with_icon(Arc::new(icon));
     }
     let options = eframe::NativeOptions {
@@ -128,6 +109,10 @@ fn main() -> eframe::Result {
             if let Some(mut lights) = lvp::infra::macos_window::TrafficLights::new(cc) {
                 ui.set_native_titlebar(Box::new(move |height, shown| lights.place(height as f64, shown)));
             }
+            #[cfg(target_os = "macos")]
+            ui.set_icon_hook(Box::new(|icon| {
+                lvp::infra::macos_window::set_dock_icon(&icon.rgba, icon.width, icon.height)
+            }));
             Ok(Box::new(ui))
         }),
     )

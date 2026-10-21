@@ -33,6 +33,9 @@ pub struct Resources {
     pub video_frame: Option<(TextureId, [u32; 2])>,
 }
 
+/// Shows a recoloured app icon somewhere egui cannot.
+pub type IconHook = Box<dyn FnMut(&egui::IconData)>;
+
 pub struct LvpApp {
     pub app: App,
     pub st: UiState,
@@ -43,6 +46,10 @@ pub struct LvpApp {
     /// Told every frame the title bar's height and whether it is shown, so a
     /// native window frame can line its buttons up with it.
     titlebar_hook: Option<Box<dyn FnMut(f32, bool)>>,
+    /// The accent the app icon was last drawn in.
+    icon_accent: Accent,
+    /// Shows a new app icon where egui cannot (the Dock on macOS).
+    icon_hook: Option<IconHook>,
 }
 
 /// Window-level behaviour driven by Interface settings.
@@ -66,6 +73,28 @@ impl LvpApp {
         self.titlebar_hook = Some(hook);
     }
 
+    /// Also hands each recoloured app icon to `hook`, for platforms where
+    /// egui's window icon does not reach the Dock or taskbar.
+    pub fn set_icon_hook(&mut self, hook: IconHook) {
+        self.icon_hook = Some(hook);
+    }
+
+    /// Redraws the app icon in the accent colour when the accent changes.
+    /// main.rs opens the window with the icon already in the saved accent.
+    fn follow_accent_with_icon(&mut self, ctx: &egui::Context) {
+        let accent = self.app.settings.general.accent;
+        if accent == self.icon_accent {
+            return;
+        }
+        self.icon_accent = accent;
+        if let Some(icon) = icons::app_icon(accent, 256) {
+            if let Some(hook) = &mut self.icon_hook {
+                hook(&icon);
+            }
+            ctx.send_viewport_cmd(ViewportCommand::Icon(Some(std::sync::Arc::new(icon))));
+        }
+    }
+
     pub fn new(ctx: &egui::Context, app: App, open: Vec<PathBuf>) -> Self {
         theme::install_fonts(ctx);
         let repaint = ctx.clone();
@@ -74,6 +103,7 @@ impl LvpApp {
         if !app.settings.general.onboarding_done {
             st.dialogs.onboarding = true;
         }
+        let app_accent = app.settings.general.accent;
         let mut me = Self {
             app,
             st,
@@ -82,6 +112,8 @@ impl LvpApp {
             last_title: String::new(),
             window: WindowTracker::default(),
             titlebar_hook: None,
+            icon_accent: app_accent,
+            icon_hook: None,
         };
         if !open.is_empty() {
             me.app.open_paths(open);
@@ -484,6 +516,7 @@ impl LvpApp {
 impl eframe::App for LvpApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.frame(ctx, frame.wgpu_render_state());
+        self.follow_accent_with_icon(ctx);
     }
 
     fn raw_input_hook(&mut self, _ctx: &egui::Context, raw_input: &mut egui::RawInput) {
