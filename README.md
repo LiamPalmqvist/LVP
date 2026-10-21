@@ -20,8 +20,8 @@ brew install --cask liampalmqvist/notvlc/lvp
 ```
 
 Homebrew only loads casks from taps you trust, and naming the cask in full as above counts. Trust
-the tap once with `brew trust liampalmqvist/notvlc` and a plain `brew upgrade` keeps LVP up to
-date. `brew uninstall --cask --zap liampalmqvist/notvlc/lvp` removes it along with its settings and
+the cask once with `brew trust --cask liampalmqvist/notvlc/lvp` and a plain `brew upgrade` keeps LVP
+up to date. `brew uninstall --cask --zap liampalmqvist/notvlc/lvp` removes it along with its settings and
 library.
 
 ### Arch Linux
