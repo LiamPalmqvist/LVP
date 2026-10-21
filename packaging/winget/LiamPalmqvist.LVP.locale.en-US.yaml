@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+
+PackageIdentifier: LiamPalmqvist.LVP
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Liam Palmqvist
+PublisherUrl: https://github.com/LiamPalmqvist
+PublisherSupportUrl: https://github.com/LiamPalmqvist/LVP/issues
+Author: Liam Palmqvist
+PackageName: LVP
+PackageUrl: https://github.com/LiamPalmqvist/LVP
+License: GPL-2.0-or-later
+ShortDescription: Media player built on VLC's engine with a redesigned interface.
+Description: |-
+  LVP (Liam's Video Player) plays files, discs and network streams through VLC 3's engine
+  (libvlc), which it includes, with an interface redesigned after Juxtopposed's "I Redesigned VLC
+  After 25 Years".
+Moniker: lvp
+Tags:
+- audio
+- libvlc
+- media-player
+- video
+- vlc
+ReleaseNotesUrl: https://github.com/LiamPalmqvist/LVP/releases/tag/v0.1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0

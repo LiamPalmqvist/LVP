@@ -20,9 +20,9 @@ if [ -z "$version" ]; then
     echo "usage: $0 <version>" >&2
     exit 2
 fi
-id=LiamPalmqvist.NotVLC
+id=LiamPalmqvist.LVP
 upstream=microsoft/winget-pkgs
-pkgdir=manifests/l/LiamPalmqvist/NotVLC
+pkgdir=manifests/l/LiamPalmqvist/LVP
 dir="$pkgdir/$version"
 
 for manifest in winget/*.yaml; do
@@ -88,7 +88,7 @@ tested=' '
 body=$(cat <<EOF
 ## 📖 Description
 
-$title: NotVLC, a media player built on VLC's engine (https://github.com/LiamPalmqvist/NotVLC). The installer is the release's Windows zip, which holds a portable NotVLC.exe; it depends on VideoLAN.VLC, whose libvlc it plays through.
+$title: LVP, a media player built on VLC's engine (https://github.com/LiamPalmqvist/LVP). The installer is the release's Windows zip, which holds a portable LVP.exe and the VLC engine (libvlc and its plugins) it plays through.
 
 ## ✅ Checklist
 

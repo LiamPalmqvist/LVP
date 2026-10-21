@@ -9,7 +9,7 @@ Licences
 --------
 
 - LVP: GNU General Public License, version 2 or later (LICENSE.txt).
-  Source: https://github.com/LiamPalmqvist/NotVLC
+  Source: https://github.com/LiamPalmqvist/LVP
 - libvlc and libvlccore: GNU Lesser General Public License, version 2.1 or
   later (LGPL-2.1.txt). Copyright VLC authors and VideoLAN.
 - VLC's plugins: GNU GPL version 2 or later, or GNU LGPL version 2.1 or later,

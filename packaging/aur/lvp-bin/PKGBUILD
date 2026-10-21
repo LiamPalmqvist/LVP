@@ -1,10 +1,10 @@
 # Maintainer: Liam Palmqvist <https://github.com/LiamPalmqvist>
-pkgname=notvlc-bin
+pkgname=lvp-bin
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Media player built on VLC's engine with a redesigned interface (release binary)"
 arch=('x86_64')
-url="https://github.com/LiamPalmqvist/NotVLC"
+url="https://github.com/LiamPalmqvist/LVP"
 license=('GPL-2.0-or-later')
 # libvlc and the windowing and graphics libraries are loaded at runtime.
 depends=('libgcc' 'glibc' 'hicolor-icon-theme' 'libvlc' 'vlc-plugins-all'
@@ -13,15 +13,15 @@ depends=('libgcc' 'glibc' 'hicolor-icon-theme' 'libvlc' 'vlc-plugins-all'
 optdepends=('xdg-desktop-portal: file and folder pickers'
             'libnotify: desktop notifications'
             'xdg-utils: show a file in its folder')
-provides=('notvlc')
-conflicts=('notvlc')
+provides=('lvp')
+conflicts=('lvp')
 options=('!debug')
-source_x86_64=("notvlc-$pkgver-linux-x86_64.tar.gz::$url/releases/download/v$pkgver/notvlc-$pkgver-linux-x86_64.tar.gz")
+source_x86_64=("lvp-$pkgver-linux-x86_64.tar.gz::$url/releases/download/v$pkgver/lvp-$pkgver-linux-x86_64.tar.gz")
 sha256sums_x86_64=('409b64e1fa7783c54a1f0f16c6ece662871377f3e36b57ffeb2374f3e9569238')
 
 package() {
-  cd "notvlc-$pkgver-linux-$CARCH"
-  install -Dm755 bin/notvlc "$pkgdir/usr/bin/notvlc"
-  install -Dm644 share/applications/org.notvlc.NotVLC.desktop -t "$pkgdir/usr/share/applications"
-  install -Dm644 share/icons/hicolor/256x256/apps/notvlc.png -t "$pkgdir/usr/share/icons/hicolor/256x256/apps"
+  cd "lvp-$pkgver-linux-$CARCH"
+  install -Dm755 bin/lvp "$pkgdir/usr/bin/lvp"
+  install -Dm644 share/applications/org.lvp.LVP.desktop -t "$pkgdir/usr/share/applications"
+  install -Dm644 share/icons/hicolor/256x256/apps/lvp.png -t "$pkgdir/usr/share/icons/hicolor/256x256/apps"
 }

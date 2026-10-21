@@ -1,8 +1,8 @@
-pkgbase = notvlc-bin
+pkgbase = lvp-bin
 	pkgdesc = Media player built on VLC's engine with a redesigned interface (release binary)
 	pkgver = 0.1.0
 	pkgrel = 1
-	url = https://github.com/LiamPalmqvist/NotVLC
+	url = https://github.com/LiamPalmqvist/LVP
 	arch = x86_64
 	license = GPL-2.0-or-later
 	depends = libgcc
@@ -21,10 +21,10 @@ pkgbase = notvlc-bin
 	optdepends = xdg-desktop-portal: file and folder pickers
 	optdepends = libnotify: desktop notifications
 	optdepends = xdg-utils: show a file in its folder
-	provides = notvlc
-	conflicts = notvlc
+	provides = lvp
+	conflicts = lvp
 	options = !debug
-	source_x86_64 = notvlc-0.1.0-linux-x86_64.tar.gz::https://github.com/LiamPalmqvist/NotVLC/releases/download/v0.1.0/notvlc-0.1.0-linux-x86_64.tar.gz
+	source_x86_64 = lvp-0.1.0-linux-x86_64.tar.gz::https://github.com/LiamPalmqvist/LVP/releases/download/v0.1.0/lvp-0.1.0-linux-x86_64.tar.gz
 	sha256sums_x86_64 = 409b64e1fa7783c54a1f0f16c6ece662871377f3e36b57ffeb2374f3e9569238
 
-pkgname = notvlc-bin
+pkgname = lvp-bin

@@ -1,7 +1,7 @@
 name: Packages
 
-# Keeps the Homebrew cask, the AUR packages (notvlc and notvlc-bin) and the
-# winget manifest in step with NotVLC's releases. build.yml runs this after it
+# Keeps the Homebrew cask, the AUR packages (lvp and lvp-bin) and the
+# winget manifest in step with LVP's releases. build.yml runs this after it
 # publishes a release; run it by hand (Actions > Packages > Run workflow, or
 # `gh workflow run packaging.yml -f tag=v0.2.0`) to publish a release again.
 #
@@ -90,21 +90,21 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
         run: |
           brew update --quiet
-          brew tap-new --no-git notvlc/ci
-          tap="$(brew --repository)/Library/Taps/notvlc/homebrew-ci"
+          brew tap-new --no-git lvp/ci
+          tap="$(brew --repository)/Library/Taps/lvp/homebrew-ci"
           mkdir -p "$tap/Casks"
-          cp packaging/homebrew/notvlc.rb "$tap/Casks/"
-          brew style --cask notvlc/ci/notvlc
-          brew audit --cask --online --strict notvlc/ci/notvlc
-          brew install --cask notvlc/ci/notvlc
-          app=/Applications/NotVLC.app
+          cp packaging/homebrew/lvp.rb "$tap/Casks/"
+          brew style --cask lvp/ci/lvp
+          brew audit --cask --online --strict lvp/ci/lvp
+          brew install --cask lvp/ci/lvp
+          app=/Applications/LVP.app
           if xattr -p com.apple.quarantine "$app" >/dev/null 2>&1; then
-            echo "::error::NotVLC.app is still quarantined after install"
+            echo "::error::LVP.app is still quarantined after install"
             exit 1
           fi
-          "$app/Contents/MacOS/notvlc" --export-icon "$RUNNER_TEMP/icon.png"
+          "$app/Contents/MacOS/lvp" --export-icon "$RUNNER_TEMP/icon.png"
           test -s "$RUNNER_TEMP/icon.png"
-          brew uninstall --cask --zap notvlc/ci/notvlc
+          brew uninstall --cask --zap lvp/ci/lvp
       - name: Push to the tap
         if: env.PUBLISH == 'true'
         env:
@@ -122,16 +122,16 @@ jobs:
           echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > ~/.ssh/github_hosts
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/tap -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/github_hosts"
           git clone git@github.com:LiamPalmqvist/homebrew-notvlc.git "$RUNNER_TEMP/tap"
-          cp packaging/homebrew/notvlc.rb "$RUNNER_TEMP/tap/Casks/notvlc.rb"
+          cp packaging/homebrew/lvp.rb "$RUNNER_TEMP/tap/Casks/lvp.rb"
           cd "$RUNNER_TEMP/tap"
-          git add Casks/notvlc.rb
+          git add Casks/lvp.rb
           if git diff --cached --quiet; then
             echo "The tap already has this version."
             exit 0
           fi
-          version=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/notvlc.rb)
+          version=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/lvp.rb)
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -m "notvlc $version"
+            commit -m "lvp $version"
           git push origin HEAD
 
   aur:
@@ -141,7 +141,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: [notvlc, notvlc-bin]
+        pkg: [lvp, lvp-bin]
     steps:
       - run: pacman -Syu --noconfirm --needed git jq namcap openssh
       - uses: actions/download-artifact@v4
@@ -167,7 +167,7 @@ jobs:
           sudo -u builder makepkg --syncdeps --noconfirm
           namcap PKGBUILD ./*.pkg.tar.zst || true
           pacman -U --noconfirm ./*.pkg.tar.zst
-          notvlc --export-icon /tmp/icon.png
+          lvp --export-icon /tmp/icon.png
           test -s /tmp/icon.png
       - name: Push to the AUR
         if: env.PUBLISH == 'true'
@@ -250,7 +250,7 @@ jobs:
           # Defender's real-time protection is off, as it is on these runners, so
           # scan the release zip with Defender directly and name anything it finds.
           $url = (Select-String -Path packaging/winget/*.installer.yaml -Pattern '^\s*InstallerUrl:\s*(\S+)').Matches[0].Groups[1].Value
-          $zip = Join-Path $env:RUNNER_TEMP "notvlc.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "lvp.zip"
           Invoke-WebRequest -Uri $url -OutFile $zip
           Get-MpComputerStatus | Format-List AMServiceEnabled, AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureVersion, AntivirusSignatureLastUpdated
           try { Update-MpSignature -ErrorAction Stop } catch { Write-Warning "Defender signatures not updated: $_" }
@@ -265,11 +265,11 @@ jobs:
           winget settings --enable LocalArchiveMalwareScanOverride
           winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity --ignore-local-archive-malware-scan
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter NotVLC.exe | Select-Object -First 1
-          if (-not $exe) { throw "winget did not install NotVLC.exe" }
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter LVP.exe | Select-Object -First 1
+          if (-not $exe) { throw "winget did not install LVP.exe" }
           $icon = Join-Path $env:RUNNER_TEMP "icon.png"
           Start-Process -FilePath $exe.FullName -ArgumentList @("--export-icon", $icon) -Wait -NoNewWindow
-          if (-not (Test-Path $icon)) { throw "NotVLC.exe did not run" }
+          if (-not (Test-Path $icon)) { throw "LVP.exe did not run" }
 
   winget-submit:
     needs: [prepare, winget]
@@ -285,7 +285,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.WINGET_TOKEN }}
           VALIDATED: "1"
+          # Off until the repository variable WINGET_PUBLISH is set to true.
+          WINGET_PUBLISH: ${{ vars.WINGET_PUBLISH }}
         run: |
+          if [ "$WINGET_PUBLISH" != true ]; then
+            echo "::notice::winget publishing is off (repository variable WINGET_PUBLISH), so no winget-pkgs pull request was opened."
+            exit 0
+          fi
           if [ -z "$GH_TOKEN" ]; then
             echo "::notice::WINGET_TOKEN is not set, so no winget-pkgs pull request was opened."
             exit 0

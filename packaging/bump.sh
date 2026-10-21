@@ -4,7 +4,7 @@
 #   packaging/bump.sh 0.2.0
 #
 # Takes the asset checksums GitHub records for the release, hashes the source
-# tarball the AUR's notvlc builds from, and rewrites the version and checksums
+# tarball the AUR's lvp builds from, and rewrites the version and checksums
 # in the Homebrew cask, both AUR packages (.SRCINFO included) and the winget
 # manifests. A new version resets the AUR pkgrel to 1. Running it twice for one
 # version changes nothing.
@@ -20,7 +20,7 @@ if [ -z "$version" ]; then
     echo "usage: $0 <version>" >&2
     exit 2
 fi
-repo=LiamPalmqvist/NotVLC
+repo=LiamPalmqvist/LVP
 tag="v$version"
 
 get() {
@@ -59,9 +59,9 @@ asset_sha() {
 }
 
 V=$version
-MAC=$(asset_sha "notvlc-$version-macos-arm64.zip")
-LINUX=$(asset_sha "notvlc-$version-linux-x86_64.tar.gz")
-WIN=$(asset_sha "notvlc-$version-windows-x64.zip")
+MAC=$(asset_sha "lvp-$version-macos-arm64.zip")
+LINUX=$(asset_sha "lvp-$version-linux-x86_64.tar.gz")
+WIN=$(asset_sha "lvp-$version-windows-x64.zip")
 SRC=$(get "https://github.com/$repo/archive/refs/tags/$tag.tar.gz" | sha256)
 DATE=$(printf '%s' "$release" | jq -r '.published_at[0:10]')
 export V MAC LINUX WIN SRC DATE
@@ -78,14 +78,14 @@ bump() {
 # Version-bearing lines only; a checksum or another number is never touched.
 replace_version='s/\Q$ENV{OLD}\E/$ENV{V}/g if /^\s*(-\s*)?(version|pkgver|source(?:_\w+)?|PackageVersion|InstallerUrl|RelativeFilePath|ReleaseNotesUrl)\b/;'
 
-cask=homebrew/notvlc.rb
+cask=homebrew/lvp.rb
 bump "$cask" "$(sed -n 's/^  version "\(.*\)"/\1/p' "$cask")" \
     "$replace_version"' s/^  sha256 ".*"/  sha256 "$ENV{MAC}"/;'
 
-for pkg in notvlc notvlc-bin; do
+for pkg in lvp lvp-bin; do
     case "$pkg" in
-        notvlc) sum=SRC ;;
-        notvlc-bin) sum=LINUX ;;
+        lvp) sum=SRC ;;
+        lvp-bin) sum=LINUX ;;
     esac
     old=$(sed -n 's/^pkgver=//p' "aur/$pkg/PKGBUILD")
     rel='s/^pkgrel=.*/pkgrel=1/; s/^\tpkgrel = .*/\tpkgrel = 1/;'
